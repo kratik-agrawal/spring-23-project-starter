@@ -21,6 +21,7 @@ class Interpreter(InterpreterBase):
         class_def = self.class_map["main"]
         obj = class_def.instantiate_object()
         obj.call_method("main", [])
+        # obj.call_method("test", ['1','2'])
         return
     
     def __discover_all_classes_and_track_them(self, program):
@@ -42,7 +43,8 @@ class Interpreter(InterpreterBase):
                         super().error(ErrorType.NAME_ERROR,
                                       "two fields with the same name")
                     else:
-                        fields[item[1]] = get_native_type(item[2]) # parse this to native type
+                        # fields[item[1]] = get_native_type(item[2]) # parse this to native type
+                        fields[item[1]] = item[2]
                 elif item[0] == super().METHOD_DEF:
                     # handle a method
                     if item[1] in methods:
@@ -142,7 +144,7 @@ class ObjectDefinition:
         if statement_type == self.super.PRINT_DEF:
             result = self.__execute_print_statement(statement, parameters)
         elif statement_type == self.super.INPUT_INT_DEF or statement_type == self.super.INPUT_STRING_DEF:
-            result = self.__execute_input_statement(statement)
+            result = self.__execute_input_statement(statement, parameters)
         elif statement_type == self.super.CALL_DEF:
             result = self.__execute_call_statement(statement)
         elif statement_type == self.super.WHILE_DEF:
@@ -167,6 +169,8 @@ class ObjectDefinition:
             val = get_native_type(arg)
             if val in parameters:
                 val = parameters[val]
+            if val in self.obj_fields:
+                val = self.obj_fields[val]
             elif val == True or val == False:
                 val = str(val).lower()
             result += str(val)
@@ -175,26 +179,29 @@ class ObjectDefinition:
     def __execute_input_statement(self, statement, parameters):
         val = self.super.get_input()
         if statement[0] == self.super.INPUT_INT_DEF:
-            val = int(val)
+            val = str(val)
         else:
             val = "\"" + str(val) + "\""
 
         if statement[1] in parameters: # if the value is in parameters, make it that value
             parameters[statement[1]] = val 
+            # print(parameters)
         elif statement[1] in self.obj_fields: # if the value is in the object, make it that value
             self.obj_fields[statement[1]] = val
-
+            # print(self.obj_fields)
     def __execute_set_statement(self, statement, parameters):
-        set_value = get_native_type(statement[2])
+        # print(statement, "parameters before", parameters, "\n")
+        # set_value = get_native_type(statement[2])
+        set_value = statement[2]
         if statement[1] in parameters: # if the value is in parameters, make it that value
             parameters[statement[1]] = set_value 
         elif statement[1] in self.obj_fields: # if the value is in the object, make it that value
             self.obj_fields[statement[1]] = set_value
         else:
             self.super.error(ErrorType.NAME_ERROR,
-                                      "Can't Set, field or name does not exist")
+                                      f"{statement}Can't Set, field or name does not exist")
             return -1023
-    
+        # print(statement, "parameters after", parameters, "\n")
     def __execute_begin_statement(self,statement, parameters):
         for s in statement[1:]:
             result = self.__run_statement(s, parameters)
@@ -212,6 +219,17 @@ if __name__ == '__main__':
    (set x 20)
    (print "here's a result " (* 3 5) " and here's a boolean" true)
    (set x true)
+   (print x)
+  )
+ )
+ (method test (a b)
+  (begin
+   (set a "def")
+   (print a)
+   (set b 20)
+   (print "here's a result " (* 3 5) " and here's a boolean" true)
+   (inputi x)
+   (print b)
    (print x)
   )
  )
