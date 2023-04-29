@@ -21,7 +21,7 @@ class Interpreter(InterpreterBase):
         class_def = self.class_map["main"]
         obj = class_def.instantiate_object()
         obj.call_method("main", [])
-        # obj.call_method("test", ['1','2'])
+        obj.call_method("test", ['1','2'])
         return
     
     def __discover_all_classes_and_track_them(self, program):
@@ -68,29 +68,7 @@ class Interpreter(InterpreterBase):
             self.class_map[class_name] = class_definition
         return
 
-def get_native_type(argument):
-    if type(argument) is list:
-        return evaluate_expression(argument)
-    if argument[0] == '"' and argument[-1] == '"':
-        return argument.strip("\"")
-    elif argument == 'true':
-        return True
-    elif argument == 'false':
-        return False
-    elif argument == 'null':
-        return None
-    elif argument[0] == '-':
-        if argument[1:].isdigit():
-            return int(argument)
-    elif argument.isdigit():
-        return int(argument)
-    else:
-        # NEED TO DO
-        # this will be a variable or classname
-        return argument
 
-def evaluate_expression(argument):
-    return 0
 
 
 class ClassDefiniton:
@@ -166,12 +144,8 @@ class ObjectDefinition:
         result = ""
         for arg in statement[1:]: ## ignoring the print command itself
             #need to evaluate arg
-            val = get_native_type(arg)
-            if val in parameters:
-                val = parameters[val]
-            if val in self.obj_fields:
-                val = self.obj_fields[val]
-            elif val == True or val == False:
+            val = self.__get_native_type(arg, parameters)
+            if val == True or val == False:
                 val = str(val).lower()
             result += str(val)
         self.super.output(result)
@@ -188,7 +162,9 @@ class ObjectDefinition:
             # print(parameters)
         elif statement[1] in self.obj_fields: # if the value is in the object, make it that value
             self.obj_fields[statement[1]] = val
+            print(self.obj_fields)
             # print(self.obj_fields)
+            
     def __execute_set_statement(self, statement, parameters):
         # print(statement, "parameters before", parameters, "\n")
         # set_value = get_native_type(statement[2])
@@ -202,9 +178,131 @@ class ObjectDefinition:
                                       f"{statement}Can't Set, field or name does not exist")
             return -1023
         # print(statement, "parameters after", parameters, "\n")
+
     def __execute_begin_statement(self,statement, parameters):
         for s in statement[1:]:
             result = self.__run_statement(s, parameters)
+
+    def __var_type(self,argument):
+        if type(argument) is list:
+            return "expression"
+        if argument[0] == '"' and argument[-1] == '"':
+            return self.super.STRING_DEF
+        elif argument == 'true' or  argument == 'false':
+            return self.super.BOOL_DEF
+        elif argument == 'null':
+            return self.super.NULL_DEF
+        elif argument[0] == '-':
+            if argument[1:].isdigit():
+                return self.super.INT_DEF
+        elif argument.isdigit():
+            return self.super.INT_DEF
+        else:
+            # NEED TO DO
+            # this will be a variable or classname
+            return "variable or object"
+        
+    def __get_native_type(self,argument, parameters):
+        if type(argument) is list:
+            return self.__evaluate_expression(argument, parameters)
+        if argument[0] == '"' and argument[-1] == '"':
+            return argument.strip("\"")
+        elif argument == 'true':
+            return True
+        elif argument == 'false':
+            return False
+        elif argument == 'null':
+            return None
+        elif argument[0] == '-':
+            if argument[1:].isdigit():
+                return int(argument)
+        elif argument.isdigit():
+            return int(argument)
+        else:
+            # NEED TO DO
+            # this will be a variable or classname
+            if argument in parameters:
+                return self.__get_native_type(parameters[argument], parameters)
+            elif argument in self.obj_fields:
+                return self.__get_native_type(self.obj_fields[argument], parameters)
+            else:
+                self.super.error(ErrorType.NAME_ERROR,
+                                      f"{argument} Does not exist.")
+            return argument
+
+    def __evaluate_expression(self, expression, parameters):
+        operand = expression[0]
+        if operand == '+' or operand == '-':
+            result = self.__handle_arithmetic(expression, parameters)
+        elif operand == '!':
+            result = self.__handle_not(expression, parameters)
+        elif operand == '>' or operand == '<' or operand == '>=' or operand == '<=' or operand == '!=' or operand == '==':
+            result = self.__handle_comparison(expression, parameters)
+        else:
+            result = "abc"
+        
+        return result
+
+    def __handle_arithmetic(self,expression, parameters):
+        operand = expression[0]
+        argument1 = self.__get_native_type(expression[1], parameters)
+        argument2 = self.__get_native_type(expression[2], parameters)
+        if operand == '+':
+            if type(argument1) != type(argument2):
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} Not a compatible operation.")
+            else:
+                result =  argument1 + argument2
+        elif operand == '-':
+            if type(argument1) != type(argument2):
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} Not a compatible operation.")
+            else:
+                result =  argument1 - argument2
+
+        return result
+
+    def __handle_not(self, expression, parameters):
+        if self.__var_type(expression[1]) != self.super.BOOL_DEF:
+            self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} Not a compatible operation.")
+        else:
+            currval = self.__get_native_type(expression, parameters)
+            if currval == False:
+                return 'true'
+            else:
+                return 'false'
+            
+
+    def __handle_comparison(self, expression, parameters):
+        operand = expression[0]
+        argument1 = self.__get_native_type(expression[1], parameters)
+        argument2 = self.__get_native_type(expression[2], parameters)
+        if type(argument1) != type(argument2):
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} Not a compatible operation.")
+        if operand == '>':
+            result =  argument1 > argument2
+        elif operand == '<':
+            result =  argument1 < argument2
+        elif operand == '>=':
+            result =  argument1 >= argument2
+        elif operand == '<=':
+            result =  argument1 <= argument2
+        elif operand == '!=':
+            result =  argument1 != argument2
+        elif operand == '==':
+            result =  argument1 == argument2
+            
+        return result
+
+
+
+
+
+
+
+
 
 
 
@@ -219,6 +317,7 @@ if __name__ == '__main__':
    (set x 20)
    (print "here's a result " (* 3 5) " and here's a boolean" true)
    (set x true)
+   (set x (+ "576" "5"))
    (print x)
   )
  )
@@ -228,7 +327,6 @@ if __name__ == '__main__':
    (print a)
    (set b 20)
    (print "here's a result " (* 3 5) " and here's a boolean" true)
-   (inputi x)
    (print b)
    (print x)
   )
