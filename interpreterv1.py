@@ -21,7 +21,7 @@ class Interpreter(InterpreterBase):
         class_def = self.class_map["main"]
         obj = class_def.instantiate_object()
         obj.call_method("main", [])
-        obj.call_method("test", ['1','2'])
+        # obj.call_method("test", ['1','2'])
         return
     
     def __discover_all_classes_and_track_them(self, program):
@@ -128,7 +128,7 @@ class ObjectDefinition:
         elif statement_type == self.super.WHILE_DEF:
             result = self.__execute_while_statement(statement)
         elif statement_type == self.super.IF_DEF:
-            result = self.__execute_if_statement(statement)
+            result = self.__execute_if_statement(statement, parameters)
         elif statement_type == self.super.RETURN_DEF:
             result = self.__execute_return_statement(statement)
         elif statement_type == self.super.BEGIN_DEF:
@@ -169,10 +169,13 @@ class ObjectDefinition:
         # print(statement, "parameters before", parameters, "\n")
         # set_value = get_native_type(statement[2])
         set_value = statement[2]
+        if type(statement[2]) is list:
+            set_value = self.__evaluate_expression(statement[2], parameters)
         if statement[1] in parameters: # if the value is in parameters, make it that value
             parameters[statement[1]] = set_value 
         elif statement[1] in self.obj_fields: # if the value is in the object, make it that value
             self.obj_fields[statement[1]] = set_value
+            # print(self.obj_fields)
         else:
             self.super.error(ErrorType.NAME_ERROR,
                                       f"{statement}Can't Set, field or name does not exist")
@@ -182,7 +185,20 @@ class ObjectDefinition:
     def __execute_begin_statement(self,statement, parameters):
         for s in statement[1:]:
             result = self.__run_statement(s, parameters)
-
+    
+    def __execute_if_statement(self, statement, parameters):
+        if statement[1] != 'true' and statement[1] != 'false':
+            result = self.__evaluate_expression(statement[1], parameters)
+        else:
+            result = statement[1]
+        if result == 'true':
+            self.__run_statement(statement[2], parameters)
+        elif result == 'false':
+            if len(statement) > 3:
+                self.__run_statement(statement[3], parameters)
+        else:
+            self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in if statement")
+        
     def __var_type(self,argument):
         if type(argument) is list:
             return "expression"
@@ -204,7 +220,8 @@ class ObjectDefinition:
         
     def __get_native_type(self,argument, parameters):
         if type(argument) is list:
-            return self.__evaluate_expression(argument, parameters)
+            temp = self.__evaluate_expression(argument, parameters)
+            return self.__get_native_type(temp, parameters)
         if argument[0] == '"' and argument[-1] == '"':
             return argument.strip("\"")
         elif argument == 'true':
@@ -216,7 +233,7 @@ class ObjectDefinition:
         elif argument[0] == '-':
             if argument[1:].isdigit():
                 return int(argument)
-        elif argument.isdigit():
+        elif argument.isdigit() :
             return int(argument)
         else:
             # NEED TO DO
@@ -232,7 +249,7 @@ class ObjectDefinition:
 
     def __evaluate_expression(self, expression, parameters):
         operand = expression[0]
-        if operand == '+' or operand == '-':
+        if operand == '+' or operand == '-' or operand == '*' or operand == '/' or operand == '%':
             result = self.__handle_arithmetic(expression, parameters)
         elif operand == '!':
             result = self.__handle_not(expression, parameters)
@@ -248,30 +265,62 @@ class ObjectDefinition:
         argument1 = self.__get_native_type(expression[1], parameters)
         argument2 = self.__get_native_type(expression[2], parameters)
         if operand == '+':
-            if type(argument1) != type(argument2):
+            if (type(argument1) != int and type(argument1) != str) or type(argument1) != type(argument2):
                 self.super.error(ErrorType.TYPE_ERROR,
                                       f"{expression} Not a compatible operation.")
             else:
-                result =  argument1 + argument2
+                if type(argument1) == str:
+                    result =  "\"" + argument1 + argument2 + "\""
+                else:
+                    result = argument1 + argument2
         elif operand == '-':
-            if type(argument1) != type(argument2):
+            if type(argument1) != int or type(argument1) != type(argument2):
                 self.super.error(ErrorType.TYPE_ERROR,
                                       f"{expression} Not a compatible operation.")
             else:
                 result =  argument1 - argument2
-
-        return result
+        elif operand == '*':
+            if type(argument1) != int or type(argument1) != type(argument2):
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} Not a compatible operation.")
+            else:
+                result =  argument1 * argument2
+        elif operand == '/':
+            if type(argument1) != int or type(argument1) != type(argument2):
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} Not a compatible operation.")
+            else:
+                result =  argument1 / argument2
+        elif operand == '%':
+            if type(argument1) != int or type(argument1) != type(argument2):
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} arg1 {argument1} arg2 {argument2} Not a compatible operation.")
+            else:
+                result =  argument1 % argument2
+        # print(f"{expression} {argument1} {argument2}")
+        return str(result)
 
     def __handle_not(self, expression, parameters):
-        if self.__var_type(expression[1]) != self.super.BOOL_DEF:
-            self.super.error(ErrorType.TYPE_ERROR,
-                                      f"{expression} Not a compatible operation.")
+        # if self.__var_type(expression[1]) == "variable or object":
+            
+        # if self.__var_type(expression[1]) != self.super.BOOL_DEF:
+        #     self.super.error(ErrorType.TYPE_ERROR,
+        #                               f"{expression} Not a compatible operation.")
+        # else:
+        if type(expression[1]) is list:
+            currval = self.__evaluate_expression(expression[1], parameters)
+            currval = self.__get_native_type(currval, parameters)
         else:
-            currval = self.__get_native_type(expression, parameters)
-            if currval == False:
-                return 'true'
-            else:
-                return 'false'
+            currval = self.__get_native_type(expression[1], parameters)
+
+        # print("curr", currval)
+        if currval == False:
+            return 'true'
+        elif currval == True:
+            return 'false'
+        else:
+            self.super.error(ErrorType.TYPE_ERROR,
+                                       f"{expression} Not a compatible operation.")
             
 
     def __handle_comparison(self, expression, parameters):
@@ -280,7 +329,7 @@ class ObjectDefinition:
         argument2 = self.__get_native_type(expression[2], parameters)
         if type(argument1) != type(argument2):
                 self.super.error(ErrorType.TYPE_ERROR,
-                                      f"{expression} Not a compatible operation.")
+                                      f"{expression} arg1 {argument1} arg2 {argument2} Not a compatible operation.")
         if operand == '>':
             result =  argument1 > argument2
         elif operand == '<':
@@ -293,6 +342,11 @@ class ObjectDefinition:
             result =  argument1 != argument2
         elif operand == '==':
             result =  argument1 == argument2
+
+        if result == True:
+            result = 'true'
+        elif result == False:
+            result = 'false'
             
         return result
 
@@ -308,44 +362,67 @@ class ObjectDefinition:
 
 
 if __name__ == '__main__':
+#     program = ['''(class main
+#  (field x 5)
+#  (method main ()
+#   (begin
+#    (print x)
+#    (set x "def")
+#    (print x)
+#    (set x (+ 5 7))
+#    (print x)
+#    (print "here's a result " (* 3 5) " and here's a boolean" true)
+#    (set x true)
+#    (set x (+ "576" "5"))
+#    (print x)
+#   )
+#  )
+#  (method test (a b)
+#   (begin
+#    (set a "def")
+#    (print a)
+#    (set b 20)
+#    (print "here's a result " (* 3 5) " and here's a boolean" true)
+#    (print b)
+#    (print x)
+#   )
+#  )
+# )
+# (class bob
+#  (field x "abc")
+#  (method main ()
+#   (begin
+#    (set x "def")
+#    (print x)
+#    (set x 20)
+#    (print x)
+#    (set x true)
+#    (print x)
+#   )
+#  )
+# )
+# ''']
+
     program = ['''(class main
- (field x 5)
- (method main ()
-  (begin
-   (set x "def")
-   (print x)
-   (set x 20)
-   (print "here's a result " (* 3 5) " and here's a boolean" true)
-   (set x true)
-   (set x (+ "576" "5"))
-   (print x)
+        (field x 0)
+        (method main () 
+          (begin
+           (set x (+ "abc" (+ "def" "g")))
+           (print x)
+           (set x (+ 3 (- 5 1)))
+           (if (== 0 (% x 2)) 
+             (print "x is even")
+             (print "x is odd")
+           )
+           (set x (! false))  
+           (print x)     
+           (if (! (! x)) 
+             (print "lucky seven") 
+           )  
+           (if (!= x (! (! false))) (print "that's true") (print "this won't print"))    
+          )
   )
- )
- (method test (a b)
-  (begin
-   (set a "def")
-   (print a)
-   (set b 20)
-   (print "here's a result " (* 3 5) " and here's a boolean" true)
-   (print b)
-   (print x)
-  )
- )
-)
-(class bob
- (field x "abc")
- (method main ()
-  (begin
-   (set x "def")
-   (print x)
-   (set x 20)
-   (print x)
-   (set x true)
-   (print x)
-  )
- )
 )
 ''']
-
     interpreter = Interpreter()
     interpreter.run(program) 
