@@ -64,7 +64,7 @@ class Interpreter(InterpreterBase):
             # print(fields)
             # print(methods)
             # print()
-            class_definition = ClassDefiniton(super(),class_name, methods, fields)
+            class_definition = ClassDefiniton(self,super(),class_name, methods, fields)
             self.class_map[class_name] = class_definition
         return
 
@@ -72,7 +72,8 @@ class Interpreter(InterpreterBase):
 
 
 class ClassDefiniton:
-    def __init__(self, super, name, methods, fields):
+    def __init__(self, above, super, name, methods, fields):
+        self.above = above
         self.super = super
         self.my_name = name
         self.my_methods = methods
@@ -80,7 +81,7 @@ class ClassDefiniton:
         return 
     
     def instantiate_object(self):
-        obj = ObjectDefinition(self.super)
+        obj = ObjectDefinition(self.above,self.super)
         for name, details in self.my_methods.items():
             obj.add_method(name, details)
 
@@ -90,7 +91,8 @@ class ClassDefiniton:
     
 
 class ObjectDefinition:
-    def __init__(self, super):
+    def __init__(self, above, super):
+        self.interpreter = above
         self.super = super
         self.obj_fields = {}
         self.obj_methods = {}
@@ -105,16 +107,21 @@ class ObjectDefinition:
         # method = self.__find_method(method_name)
         # statement = method.get_top_level_statement()
         # result = self.__run_statement(method, statement)
+        if method_name not in self.obj_methods:
+            self.super.error(ErrorType.NAME_ERROR,
+                                      "Method does not exist")
         method = self.obj_methods[method_name]
         if len(method['arguments']) != len(parameters):
-            super().error(ErrorType.TYPE_ERROR,
-                                      "Wrong number of arguments for method")
+            self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{method_name} Method. Wrong number of arguments for method: {parameters}")
         else:
             parameter_map = {}
             for idx, val in enumerate(method['arguments']):
                 parameter_map[val] = parameters[idx]
         statement = method['statement']
         result = self.__run_statement(statement, parameter_map)
+        if result == "exit exit exit exit":
+            return
         return result
     
     def __run_statement(self, statement, parameters):
@@ -124,13 +131,13 @@ class ObjectDefinition:
         elif statement_type == self.super.INPUT_INT_DEF or statement_type == self.super.INPUT_STRING_DEF:
             result = self.__execute_input_statement(statement, parameters)
         elif statement_type == self.super.CALL_DEF:
-            result = self.__execute_call_statement(statement)
+            result = self.__execute_call_statement(statement, parameters)
         elif statement_type == self.super.WHILE_DEF:
-            result = self.__execute_while_statement(statement)
+            result = self.__execute_while_statement(statement, parameters)
         elif statement_type == self.super.IF_DEF:
             result = self.__execute_if_statement(statement, parameters)
         elif statement_type == self.super.RETURN_DEF:
-            result = self.__execute_return_statement(statement)
+            result = self.__execute_return_statement(statement, parameters)
         elif statement_type == self.super.BEGIN_DEF:
             result = self.__execute_begin_statement(statement, parameters)
         elif statement_type == self.super.SET_DEF:
@@ -141,6 +148,7 @@ class ObjectDefinition:
         return result
     
     def __execute_print_statement(self, statement, parameters):
+        # print("print", statement, parameters)
         result = ""
         for arg in statement[1:]: ## ignoring the print command itself
             #need to evaluate arg
@@ -162,7 +170,7 @@ class ObjectDefinition:
             # print(parameters)
         elif statement[1] in self.obj_fields: # if the value is in the object, make it that value
             self.obj_fields[statement[1]] = val
-            print(self.obj_fields)
+            # print(self.obj_fields)
             # print(self.obj_fields)
             
     def __execute_set_statement(self, statement, parameters):
@@ -185,20 +193,55 @@ class ObjectDefinition:
     def __execute_begin_statement(self,statement, parameters):
         for s in statement[1:]:
             result = self.__run_statement(s, parameters)
+            if result == "exit exit exit exit":
+                return
     
+    def __execute_return_statement(self, statement, parameters):
+        if len(statement) == 1:
+            return "exit exit exit exit"
+        else:
+            return self.__evaluate_expression(statement[1], parameters)
+
     def __execute_if_statement(self, statement, parameters):
         if statement[1] != 'true' and statement[1] != 'false':
             result = self.__evaluate_expression(statement[1], parameters)
         else:
             result = statement[1]
         if result == 'true':
-            self.__run_statement(statement[2], parameters)
+            result = self.__run_statement(statement[2], parameters)
+            if result == "exit exit exit exit":
+                return
         elif result == 'false':
             if len(statement) > 3:
-                self.__run_statement(statement[3], parameters)
+                result = self.__run_statement(statement[3], parameters)
+                if result == "exit exit exit exit":
+                    return
         else:
             self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in if statement")
+
+    def __execute_while_statement(self, statement, parameters):
+        if statement[1] != 'true' and statement[1] != 'false':
+            result = self.__evaluate_expression(statement[1], parameters)
+        else:
+            result = statement[1]
+        if result != 'true' and result != 'false':
+            self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in while statement")
+        while result == 'true':
+            result = self.__run_statement(statement[2], parameters)
+            if result == "exit exit exit exit":
+                return
+            result = self.__evaluate_expression(statement[1], parameters)
+    
+    def __execute_call_statement(self, statement, parameters):
+        if statement[1] == self.super.ME_DEF:
+            return self.call_method(statement[2], statement[3:]) # Need to check
+        elif self.__get_native_type(statement[1], parameters) is None:
+            self.super.error(ErrorType.FAULT_ERROR, "Call to method of class null")
+        else:
+            object = self.__get_native_type(statement[1], parameters)
+            return object.call_method(statement[2], statement[3:])
         
+
     def __var_type(self,argument):
         if type(argument) is list:
             return "expression"
@@ -219,6 +262,8 @@ class ObjectDefinition:
             return "variable or object"
         
     def __get_native_type(self,argument, parameters):
+        if type(argument) is ObjectDefinition:
+            return argument
         if type(argument) is list:
             temp = self.__evaluate_expression(argument, parameters)
             return self.__get_native_type(temp, parameters)
@@ -246,6 +291,7 @@ class ObjectDefinition:
                 self.super.error(ErrorType.NAME_ERROR,
                                       f"{argument} Does not exist.")
             return argument
+    
 
     def __evaluate_expression(self, expression, parameters):
         operand = expression[0]
@@ -255,6 +301,21 @@ class ObjectDefinition:
             result = self.__handle_not(expression, parameters)
         elif operand == '>' or operand == '<' or operand == '>=' or operand == '<=' or operand == '!=' or operand == '==':
             result = self.__handle_comparison(expression, parameters)
+        elif operand == self.super.CALL_DEF:
+            result = self.__execute_call_statement(expression, parameters)
+        elif operand == self.super.NEW_DEF:
+            if expression[1] in self.interpreter.class_map:
+                class_def = self.interpreter.class_map[expression[1]]
+                return class_def.instantiate_object()
+            else:
+                self.super.error(ErrorType.NAME_ERROR,
+                                      f"{expression} Class does not exist.")
+        # check if class is in class map self.above.class_map
+        # if so create a class definition with class map stuff
+        # and then use that class def to create a object definition
+        # and then store that object definition in a variable
+        # what about native type too
+
         else:
             result = "abc"
         
@@ -403,26 +464,51 @@ if __name__ == '__main__':
 # )
 # ''']
 
+#     program = ['''(class main
+#         (field x 0)
+#         (method main () 
+#           (begin
+#            (set x (+ "abc" (+ "def" "g")))
+#            (print x)
+#            (set x (+ 3 (- 5 1)))
+#            (set x false)
+#            (if (== true x) 
+#              (print "x is even")
+#              (print "x is odd")
+#            )
+#            (set x 5)
+#            (while (> 0 x ) 
+#              (begin
+#                (print "x is " x)
+#                (set x (- x 1))
+#              ) 
+#            )
+#            (set x (! false))  
+#            (print x)     
+#            (if (! (! x)) 
+#              (print "lucky seven") 
+#            )  
+#            (if (!= x (! (! false))) (print "that's true") (print "this won't print"))    
+#           )
+#   )
+# )
+# ''']
+
     program = ['''(class main
-        (field x 0)
-        (method main () 
-          (begin
-           (set x (+ "abc" (+ "def" "g")))
-           (print x)
-           (set x (+ 3 (- 5 1)))
-           (if (== 0 (% x 2)) 
-             (print "x is even")
-             (print "x is odd")
-           )
-           (set x (! false))  
-           (print x)     
-           (if (! (! x)) 
-             (print "lucky seven") 
-           )  
-           (if (!= x (! (! false))) (print "that's true") (print "this won't print"))    
-          )
+ (field x "abc")
+ (method main ()
+  (begin
+   (set x "def")
+   (print x)
+   (set x 20)
+   (print x)
+   (set x true)
+   (print x)
   )
+ )
 )
+	
+
 ''']
     interpreter = Interpreter()
     interpreter.run(program) 
