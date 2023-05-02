@@ -119,7 +119,10 @@ class ObjectDefinition:
             for idx, val in enumerate(method['arguments']):
                 parameter_map[val] = parameters[idx]
         statement = method['statement']
+        # print(statement, parameter_map)
         result = self.__run_statement(statement, parameter_map)
+        # print(result)
+
         if result == "exit exit exit exit":
             return
         return result
@@ -194,13 +197,17 @@ class ObjectDefinition:
         for s in statement[1:]:
             result = self.__run_statement(s, parameters)
             if result == "exit exit exit exit":
-                return
+                return "exit exit exit exit"
     
     def __execute_return_statement(self, statement, parameters):
         if len(statement) == 1:
             return "exit exit exit exit"
         else:
-            return self.__evaluate_expression(statement[1], parameters)
+            # print("for", statement, parameters, "calling", statement[1], parameters)
+            if self.__var_type(statement[1]) == 'expression':
+                return self.__evaluate_expression(statement[1], parameters)
+            else:
+                return statement[1]
 
     def __execute_if_statement(self, statement, parameters):
         if statement[1] != 'true' and statement[1] != 'false':
@@ -219,7 +226,9 @@ class ObjectDefinition:
         else:
             self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in if statement")
 
+        return result
     def __execute_while_statement(self, statement, parameters):
+        # print(statement, parameters)
         if statement[1] != 'true' and statement[1] != 'false':
             result = self.__evaluate_expression(statement[1], parameters)
         else:
@@ -233,8 +242,20 @@ class ObjectDefinition:
             result = self.__evaluate_expression(statement[1], parameters)
     
     def __execute_call_statement(self, statement, parameters):
+        # print(statement, parameters)
         if statement[1] == self.super.ME_DEF:
-            return self.call_method(statement[2], statement[3:]) # Need to check
+            # print(self.call_method(statement[2], statement[3:]))
+            
+            params = statement[3:]
+            # print(params)
+            for i,p in enumerate(params):
+                # print(p)
+                if type(p) is list:
+                    params[i] = self.__evaluate_expression(p, parameters)
+                    # print(params[i])
+            # print(params)
+            # import pdb; pdb.set_trace()
+            return self.call_method(statement[2], params) # Need to check
         elif self.__get_native_type(statement[1], parameters) is None:
             self.super.error(ErrorType.FAULT_ERROR, "Call to method of class null")
         else:
@@ -317,6 +338,7 @@ class ObjectDefinition:
         # what about native type too
 
         else:
+            # print(expression)
             result = "abc"
         
         return result
@@ -359,6 +381,7 @@ class ObjectDefinition:
             else:
                 result =  argument1 % argument2
         # print(f"{expression} {argument1} {argument2}")
+        # print(str(result))
         return str(result)
 
     def __handle_not(self, expression, parameters):
@@ -507,6 +530,7 @@ if __name__ == '__main__':
   )
  )
 )
+
 	
 
 ''']
