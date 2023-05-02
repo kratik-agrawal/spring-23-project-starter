@@ -151,6 +151,7 @@ class ObjectDefinition:
         return result
     
     def __execute_print_statement(self, statement, parameters):
+        # print(self.obj_fields)
         # print("print", statement, parameters)
         result = ""
         for arg in statement[1:]: ## ignoring the print command itself
@@ -179,6 +180,7 @@ class ObjectDefinition:
     def __execute_set_statement(self, statement, parameters):
         # print(statement, "parameters before", parameters, "\n")
         # set_value = get_native_type(statement[2])
+        # print("setting", statement, parameters)
         set_value = statement[2]
         if type(statement[2]) is list:
             set_value = self.__evaluate_expression(statement[2], parameters)
@@ -260,7 +262,19 @@ class ObjectDefinition:
             self.super.error(ErrorType.FAULT_ERROR, "Call to method of class null")
         else:
             object = self.__get_native_type(statement[1], parameters)
-            return object.call_method(statement[2], statement[3:])
+            params = statement[3:]
+            # print(params)
+            for i,p in enumerate(params):
+                # print(p)
+                if type(p) is list:
+                    params[i] = self.__evaluate_expression(p, parameters)
+                elif p in parameters:
+                    params[i] = parameters[p]
+                elif p in self.obj_fields:
+                    return self.obj_fields[p]
+            # print("parameters", parameters)
+            # print("params",params)
+            return object.call_method(statement[2], params)
         
 
     def __var_type(self,argument):
@@ -302,8 +316,6 @@ class ObjectDefinition:
         elif argument.isdigit() :
             return int(argument)
         else:
-            # NEED TO DO
-            # this will be a variable or classname
             if argument in parameters:
                 return self.__get_native_type(parameters[argument], parameters)
             elif argument in self.obj_fields:
@@ -517,21 +529,28 @@ if __name__ == '__main__':
 # )
 # ''']
 
-    program = ['''(class main
- (field x "abc")
+    program = ['''(class person
+   (field name "")
+   (field age 0)
+   (method init (n a) (begin (set name n) (set age a)))
+   (method talk (to_whom) (print name " says hello to " to_whom))
+   (method get_age () (return age))
+)
+
+(class main
+ (field p null)
+ (method tell_joke (to_whom) (print "Hey " to_whom ", knock knock!"))
  (method main ()
-  (begin
-   (set x "def")
-   (print x)
-   (set x 20)
-   (print x)
-   (set x true)
-   (print x)
-  )
+   (begin
+      (call me tell_joke "Leia")  
+      (set p (new person))    
+      (call p init "Siddarth" 25)  
+      (call p talk "Boyan")       
+      (print "Siddarth's age is " (call p get_age))
+   )
  )
 )
 
-	
 
 ''']
     interpreter = Interpreter()
