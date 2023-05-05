@@ -423,6 +423,8 @@ class ObjectDefinition:
         operand = expression[0]
         argument1 = self.__get_native_type(expression[1], parameters)
         argument2 = self.__get_native_type(expression[2], parameters)
+        if (type(argument1) is ObjectDefinition and argument2 == None) or (type(argument2) is ObjectDefinition and argument1 == None):
+            return 'false'
         if type(argument1) != type(argument2):
                 self.super.error(ErrorType.TYPE_ERROR,
                                       f"{expression} arg1 {argument1} arg2 {argument2} Not a compatible operation.")
@@ -567,8 +569,8 @@ if __name__ == '__main__':
  (method tell_joke (to_whom) (print "Hey " to_whom ", knock knock!"))
  (method main ()
    (begin
-      (set p false)
-      (print (== p false))
+      (set p null)
+      (print (== p null))
 
       (print (/ 5 2))
       (print (* 5 2))
