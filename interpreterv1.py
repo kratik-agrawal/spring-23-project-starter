@@ -107,6 +107,7 @@ class ObjectDefinition:
         # method = self.__find_method(method_name)
         # statement = method.get_top_level_statement()
         # result = self.__run_statement(method, statement)
+        # print("obj fields", self.obj_fields)
         if method_name not in self.obj_methods:
             self.super.error(ErrorType.NAME_ERROR,
                                       "Method does not exist")
@@ -119,12 +120,15 @@ class ObjectDefinition:
             for idx, val in enumerate(method['arguments']):
                 parameter_map[val] = parameters[idx]
         statement = method['statement']
-        # print(statement, parameter_map)
+        # print("pam map", parameter_map)
         result = self.__run_statement(statement, parameter_map)
         # print(result)
-
-        if result == "exit exit exit exit":
-            return
+        # print("obj fields", self.obj_fields)
+        if type(result) is tuple and result[0] == "exit exit exit exit":
+                if result[1] == 'return':
+                    return
+                else:
+                    return result[1]
         return result
     
     def __run_statement(self, statement, parameters):
@@ -156,6 +160,7 @@ class ObjectDefinition:
         result = ""
         for arg in statement[1:]: ## ignoring the print command itself
             #need to evaluate arg
+            # print(arg)
             val = self.__get_native_type(arg, parameters)
             if val == True or val == False:
                 val = str(val).lower()
@@ -182,13 +187,16 @@ class ObjectDefinition:
         # set_value = get_native_type(statement[2])
         # print("setting", statement, parameters)
         set_value = statement[2]
+        # print("poop",parameters,set_value)
+        if type(set_value) is not list and set_value in parameters:
+            set_value = parameters[set_value]
         if type(statement[2]) is list:
             set_value = self.__evaluate_expression(statement[2], parameters)
         if statement[1] in parameters: # if the value is in parameters, make it that value
             parameters[statement[1]] = set_value 
         elif statement[1] in self.obj_fields: # if the value is in the object, make it that value
             self.obj_fields[statement[1]] = set_value
-            # print(self.obj_fields)
+            # print("in set", self.obj_fields)
         else:
             self.super.error(ErrorType.NAME_ERROR,
                                       f"{statement}Can't Set, field or name does not exist")
@@ -198,18 +206,32 @@ class ObjectDefinition:
     def __execute_begin_statement(self,statement, parameters):
         for s in statement[1:]:
             result = self.__run_statement(s, parameters)
-            if result == "exit exit exit exit":
-                return "exit exit exit exit"
+            if type(result) is tuple and result[0] == "exit exit exit exit":
+                if result[1] == 'return':
+                    return
+                else:
+                    return result[1]
     
     def __execute_return_statement(self, statement, parameters):
+        # print("Statement is", statement)
+        # print("parameters are", parameters)
+        # print("Fields are", self.obj_fields)
+        # if len(statement) > 1:
+        #     print("dawg", self.obj_fields[statement[1]])
         if len(statement) == 1:
-            return "exit exit exit exit"
+            return ("exit exit exit exit", "return")
         else:
             # print("for", statement, parameters, "calling", statement[1], parameters)
             if self.__var_type(statement[1]) == 'expression':
-                return self.__evaluate_expression(statement[1], parameters)
+                return ("exit exit exit exit",self.__evaluate_expression(statement[1], parameters))
             else:
-                return statement[1]
+                if type(statement[1]) is not list and statement[1] in parameters:
+                    return ("exit exit exit exit",parameters[statement[1]])
+                elif type(statement[1]) is not list and statement[1] in self.obj_fields:
+                    # print("here", self.obj_fields[statement[1]], type(self.obj_fields[statement[1]]))
+                    return ("exit exit exit exit",self.obj_fields[statement[1]])
+                else:
+                    return ("exit exit exit exit",statement[1])
 
     def __execute_if_statement(self, statement, parameters):
         if statement[1] != 'true' and statement[1] != 'false':
@@ -218,13 +240,19 @@ class ObjectDefinition:
             result = statement[1]
         if result == 'true':
             result = self.__run_statement(statement[2], parameters)
-            if result == "exit exit exit exit":
-                return
+            if type(result) is tuple and result[0] == "exit exit exit exit":
+                if result[1] == 'return':
+                    return
+                else:
+                    return result[1]
         elif result == 'false':
             if len(statement) > 3:
                 result = self.__run_statement(statement[3], parameters)
-                if result == "exit exit exit exit":
-                    return
+                if type(result) is tuple and result[0] == "exit exit exit exit":
+                    if result[1] == 'return':
+                        return
+                    else:
+                        return result[1]
         else:
             self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in if statement")
 
@@ -239,8 +267,11 @@ class ObjectDefinition:
             self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in while statement")
         while result == 'true':
             result = self.__run_statement(statement[2], parameters)
-            if result == "exit exit exit exit":
-                return
+            if type(result) is tuple and result[0] == "exit exit exit exit":
+                if result[1] == 'return':
+                    return
+                else:
+                    return result[1]
             result = self.__evaluate_expression(statement[1], parameters)
     
     def __execute_call_statement(self, statement, parameters):
@@ -559,20 +590,99 @@ if __name__ == '__main__':
     program2 = ['''(class person
    (field name "")
    (field age 0)
-   (method init (n a) (begin (set name n) (set age a)))
+   (method init (n a) (begin 
+        (set name n) 
+        (set age a)
+        (print n)
+        (print a)
+        (print name)
+        (print age)
+        ))
+   (method aare () (print name age))
    (method talk (to_whom) (print name " says hello to " to_whom))
+   (method testprint () (print "age"))
    (method get_age () (return age))
 )
 
 (class main
  (field p null)
- (method tell_joke (to_whom) (print "Hey " to_whom ", knock knock!"))
+ (method tell_joke (to_whom) 
+    (begin 
+        (print "Hey " to_whom ", knock knock!")
+        (print "Hey " to_whom ", knock knock!")
+        (return)
+        (print "Hey " to_whom ", knock knock!")
+
+        ))
  (method main ()
    (begin
       (set p null)
-      (print (== p null))
-
+      (print (== null (new person)))
+      (call me tell_joke "booz")
+      (set p (new person))
+      (call p init "bob" 572)
+      (print (call p get_age))
+      (call p testprint)
+      (print "jello")
       (print (/ 5 2))
+      (return)
+      (print (* 5 2))
+   )
+ )
+)
+
+
+''']
+                
+    program3 = ['''(class person
+   (field name "")
+   (field age 0)
+   (method init (n a) (begin 
+        (set name n) 
+        (set age a)
+        (print n)
+        (print a)
+        (print name)
+        (print age)
+        ))
+   (method aare () (print name age))
+   (method talk (to_whom) (print name " says hello to " to_whom))
+   (method testprint () (print "age"))
+   (method get_age () (return age))
+)
+
+(class main
+ (field p null)
+ (method tell_joke2 (to_whom) 
+    (begin 
+        (print "Hey " to_whom ", knock knock!")
+        (print "Hey " to_whom ", knock knock!")
+        (return "box")
+        (print "Hey " to_whom ", knock knock!")
+
+        ))
+ (method tell_joke (to_whom) 
+    (begin 
+        (print "Hey " to_whom ", knock knock!")
+        (call me tell_joke2 "ryan")
+        (print "Hey " to_whom ", knock knock!")
+        (print (call me tell_joke2 "ryan"))
+        (return)
+        (print "Hey " to_whom ", knock knock!")
+
+        ))
+ (method main ()
+   (begin
+      (set p null)
+      (print (== null (new person)))
+      (call me tell_joke "booz")
+      (set p (new person))
+      (call p init "bob" 572)
+      (print (call p get_age))
+      (call p testprint)
+      (print "jello")
+      (print (/ 5 2))
+      (return)
       (print (* 5 2))
    )
  )
@@ -581,4 +691,6 @@ if __name__ == '__main__':
 
 ''']
     interpreter = Interpreter()
-    interpreter.run(program2) 
+    interpreter.run(program3) 
+
+    
