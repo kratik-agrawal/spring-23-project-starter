@@ -341,7 +341,7 @@ class ObjectDefinition:
                 class_def = self.interpreter.class_map[expression[1]]
                 return class_def.instantiate_object()
             else:
-                self.super.error(ErrorType.NAME_ERROR,
+                self.super.error(ErrorType.TYPE_ERROR,
                                       f"{expression} Class does not exist.")
         # check if class is in class map self.above.class_map
         # if so create a class definition with class map stuff
@@ -385,7 +385,7 @@ class ObjectDefinition:
                 self.super.error(ErrorType.TYPE_ERROR,
                                       f"{expression} Not a compatible operation.")
             else:
-                result =  argument1 / argument2
+                result =  (int)(argument1 / argument2)
         elif operand == '%':
             if type(argument1) != int or type(argument1) != type(argument2):
                 self.super.error(ErrorType.TYPE_ERROR,
@@ -553,5 +553,30 @@ if __name__ == '__main__':
 
 
 ''']
+               
+    program2 = ['''(class person
+   (field name "")
+   (field age 0)
+   (method init (n a) (begin (set name n) (set age a)))
+   (method talk (to_whom) (print name " says hello to " to_whom))
+   (method get_age () (return age))
+)
+
+(class main
+ (field p null)
+ (method tell_joke (to_whom) (print "Hey " to_whom ", knock knock!"))
+ (method main ()
+   (begin
+      (set p false)
+      (print (== p false))
+
+      (print (/ 5 2))
+      (print (* 5 2))
+   )
+ )
+)
+
+
+''']
     interpreter = Interpreter()
-    interpreter.run(program) 
+    interpreter.run(program2) 
