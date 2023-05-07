@@ -103,11 +103,7 @@ class ObjectDefinition:
     def add_field(self, name, value):
         self.obj_fields[name] = value
     
-    def call_method(self, method_name, parameters): 
-        # method = self.__find_method(method_name)
-        # statement = method.get_top_level_statement()
-        # result = self.__run_statement(method, statement)
-        # print("obj fields", self.obj_fields)
+    def call_method(self, method_name, parameters, prev=False): 
         if method_name not in self.obj_methods:
             self.super.error(ErrorType.NAME_ERROR,
                                       "Method does not exist")
@@ -120,10 +116,7 @@ class ObjectDefinition:
             for idx, val in enumerate(method['arguments']):
                 parameter_map[val] = parameters[idx]
         statement = method['statement']
-        # print("pam map", parameter_map)
         result = self.__run_statement(statement, parameter_map)
-        # print(result)
-        # print("obj fields", self.obj_fields)
         if type(result) is tuple and result[0] == "exit exit exit exit":
                 if result[1] == 'return':
                     return
@@ -162,6 +155,12 @@ class ObjectDefinition:
             #need to evaluate arg
             # print(arg)
             val = self.__get_native_type(arg, parameters)
+            # print(val)
+            if type(result) is tuple and result[0] == "exit exit exit exit":
+                if result[1] == 'return':
+                    return
+                # else:
+                #     return result[1]
             if val == True or val == False:
                 val = str(val).lower()
             result += str(val)
@@ -242,9 +241,9 @@ class ObjectDefinition:
             result = self.__run_statement(statement[2], parameters)
             if type(result) is tuple and result[0] == "exit exit exit exit":
                 if result[1] == 'return':
-                    return
+                    return result
                 else:
-                    return result[1]
+                    return result
         elif result == 'false':
             if len(statement) > 3:
                 result = self.__run_statement(statement[3], parameters)
@@ -266,7 +265,9 @@ class ObjectDefinition:
         if result != 'true' and result != 'false':
             self.super.error(ErrorType.TYPE_ERROR, f"Expression \"{statement[1]}\" did not result in boolean in while statement")
         while result == 'true':
+            # breakpoint()
             result = self.__run_statement(statement[2], parameters)
+            # print("heebie", result)
             if type(result) is tuple and result[0] == "exit exit exit exit":
                 if result[1] == 'return':
                     return
@@ -288,6 +289,8 @@ class ObjectDefinition:
                     # print(params[i])
             # print(params)
             # import pdb; pdb.set_trace()
+            # print(self.call_method(statement[2], params))
+            
             return self.call_method(statement[2], params) # Need to check
         elif self.__get_native_type(statement[1], parameters) is None:
             self.super.error(ErrorType.FAULT_ERROR, "Call to method of class null")
@@ -305,7 +308,10 @@ class ObjectDefinition:
                     return self.obj_fields[p]
             # print("parameters", parameters)
             # print("params",params)
-            return object.call_method(statement[2], params)
+            res = object.call_method(statement[2], params, prev = True)
+            # if res == "return":
+            #     return None
+            return  res
         
 
     def __var_type(self,argument):
@@ -455,7 +461,10 @@ class ObjectDefinition:
         argument1 = self.__get_native_type(expression[1], parameters)
         argument2 = self.__get_native_type(expression[2], parameters)
         if (type(argument1) is ObjectDefinition and argument2 == None) or (type(argument2) is ObjectDefinition and argument1 == None):
-            return 'false'
+            if operand == '==':
+                return 'false'
+            else:
+                return 'true'
         if type(argument1) != type(argument2):
                 self.super.error(ErrorType.TYPE_ERROR,
                                       f"{expression} arg1 {argument1} arg2 {argument2} Not a compatible operation.")
@@ -562,27 +571,44 @@ if __name__ == '__main__':
 # )
 # ''']
 
-    program = ['''(class person
-   (field name "")
-   (field age 0)
-   (method init (n a) (begin (set name n) (set age a)))
-   (method talk (to_whom) (print name " says hello to " to_whom))
-   (method get_age () (return age))
-)
+    program = ['''
+	(class main
+         (method foo (q) 
+           (while (> q 0)
+               (if (== (% q 3) 0)
+                 (return )  
+                 (set q (- q 1))
+               )
+           )  
+         )
+         (method main () 
+           (print (call me foo 5))
+         )
+      )
 
-(class main
- (field p null)
- (method tell_joke (to_whom) (print "Hey " to_whom ", knock knock!"))
- (method main ()
-   (begin
-      (call me tell_joke "Leia")  
-      (set p (new person))    
-      (call p init "Siddarth" 25)  
-      (call p talk "Boyan")       
-      (print "Siddarth's age is " (call p get_age))
-   )
- )
-)
+
+''']
+               
+    program = ['''
+    (class xyz
+        (method foo (q) 
+           (while (> q 0)
+               (if (== (% q 3) 0)
+                 (return )  
+                 (set q (- q 1))
+               )
+           )  
+         ))
+	(class main
+        (field x 0)
+         (method main ()
+         (begin
+                (set x (new xyz))
+                (print (call x foo 5))
+         ) 
+          
+         )
+      )
 
 
 ''']
@@ -687,10 +713,29 @@ if __name__ == '__main__':
    )
  )
 )
+''']
+    program6 = ['''
+    (class xyz)
+    
+	(class main
+        (field other null)
+        (field x 0)
+         (method main ()
+         (begin
+                (print (== null other))
+                (print (!= null other))
+                (set x (new xyz))
+                
+                (print (== x null))
+                (print (!= x null))
+         ) 
+          
+         )
+      )
 
 
 ''']
     interpreter = Interpreter()
-    interpreter.run(program3) 
+    interpreter.run(program6) 
 
     
