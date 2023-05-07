@@ -369,7 +369,7 @@ class ObjectDefinition:
             result = self.__handle_arithmetic(expression, parameters)
         elif operand == '!':
             result = self.__handle_not(expression, parameters)
-        elif operand == '>' or operand == '<' or operand == '>=' or operand == '<=' or operand == '!=' or operand == '==':
+        elif operand == '>' or operand == '<' or operand == '>=' or operand == '<=' or operand == '!=' or operand == '==' or operand == '&' or operand == '|':
             result = self.__handle_comparison(expression, parameters)
         elif operand == self.super.CALL_DEF:
             result = self.__execute_call_statement(expression, parameters)
@@ -480,6 +480,14 @@ class ObjectDefinition:
             result =  argument1 != argument2
         elif operand == '==':
             result =  argument1 == argument2
+        elif operand == '&' or operand == '|':
+            if type(argument1) is not bool:
+                self.super.error(ErrorType.TYPE_ERROR,
+                                      f"{expression} arg1 {argument1} arg2 {argument2} Not a compatible operation.")
+            if operand == '&':
+                result = argument1 and argument2
+            else:
+                result = argument1 or argument2
 
         if result == True:
             result = 'true'
