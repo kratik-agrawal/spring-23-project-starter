@@ -2,6 +2,31 @@
 
 # Known errors
 
-The  program cannot handle an exit from a function when it was expecting a value. An example of this is a print statement calling a method that returns no value. 
+1. [Project 1 Spec](https://docs.google.com/document/d/1pPQ2qZKbbsbZGBSwvuy1Ir-NZLPMgVt95WPQuI5aPho)
+1. [Project 2 Spec](https://docs.google.com/document/d/1simlDMO0TK-YNDPYjkuU1C3fcaBpbIVYRaKD1pdqJj8/edit?usp=sharing)
 
-The program also does not pass the test cases for bool expr or compare null but wasn't able to figure out why. It passed local test cases.
+There are three stages to the project; students are currently at the second. Thus, this folder contains the necessary bootstrapping code:
+
+- `intbase.py`, the base class and enum definitions for the interpreter
+- `bparser.py`, a static `parser` class to parse Brewin programs
+- `interpreterv1.py`, a working top-level interpreter for project 1 that mostly delegates interpreting work to:
+  - `classv1.py` which handles class, field, and method definitions
+  - `env1.py` which handles the program environment (a map from variables to values)
+  - `objectv1.py` which handles operations on *objects*, which include statements, expressions, etc; most of the code is here!
+  - `type_valuev1.py` which has classes to create type tags
+
+You can view the starter for [Project 1](https://github.com/UCLA-CS-131/spring-23-project-starter/releases/tag/p1).
+
+Some notes on your submission (for Project 2)
+
+1. You **must have a top-level, versioned `interpreterv2.py` file** that **exports the `Interpreter` class**. If not, **your code will not run on our autograder**.
+2. You may also submit one or more additional `.py` modules that your interpreter uses, if you decide to break up your solution into multiple `.py` files.
+3. You **should not modify/submit `intbase.py` or `bparser.py`**; we will use our own when grading.
+
+You can find out more about our autograder, including how to run it, in [its accompanying repo](https://github.com/UCLA-CS-131/spring-23-autograder).
+
+## Licensing and Attribution
+
+This is an unlicensed repository; even though the source code is public, it is **not** governed by an open-source license.
+
+This code was primarily written by [Carey Nachenberg](http://careynachenberg.weebly.com/), with support from his TAs for the [Spring 2023 iteration of CS 131](https://ucla-cs-131.github.io/spring-23/).
