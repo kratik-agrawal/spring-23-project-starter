@@ -1,6 +1,7 @@
 """
 Module that manages program environments. Currently a mapping from variables to values.
 """
+from type_valuev1 import Type, Value
 
 
 class EnvironmentManager:
@@ -14,13 +15,19 @@ class EnvironmentManager:
 
     def __init__(self):
         self.environment = {}
+    
+    def get_type(self, symbol):
+        if symbol in self.environment:
+            return self.environment[symbol][0]
+
+        return None
 
     def get(self, symbol):
         """
         Get data associated with variable name.
         """
         if symbol in self.environment:
-            return self.environment[symbol]
+            return self.environment[symbol][1]
 
         return None
 
@@ -28,4 +35,7 @@ class EnvironmentManager:
         """
         Set data associated with a variable name.
         """
-        self.environment[symbol] = value
+        # print(symbol)
+        self.environment[symbol[1]] = (symbol[0], value)
+
+    

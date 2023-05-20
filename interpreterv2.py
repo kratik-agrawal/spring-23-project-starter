@@ -26,6 +26,7 @@ class Interpreter(InterpreterBase):
         Delegates parsing to the provided BParser class in bparser.py.
         """
         status, parsed_program = BParser.parse(program)
+        print([parsed_program])
         if not status:
             super().error(
                 ErrorType.SYNTAX_ERROR, f"Parse error on program: {parsed_program}"
@@ -74,3 +75,74 @@ class Interpreter(InterpreterBase):
                         item[0].line_num,
                     )
                 self.class_index[item[1]] = ClassDef(item, self)
+
+if __name__ == "__main__":
+    inter = Interpreter()
+    program = ["""
+    (class main
+        (field int x false)
+        (method int value_or_zero ((int q)) 
+            (begin
+            (if (< q 0)
+                (print "q is less than zero")
+                (return q) 
+            )
+            )
+        )
+        (method string foo ((string a) (string b)) (return (+ a b)))
+
+        (method void main ()
+            (begin
+            (print (call me value_or_zero 10))  
+            (print (call me value_or_zero -10)) 
+            )
+        )
+        )
+
+"""]
+               
+    program2 = ["""
+    (class main
+ (method void foo ((int x))
+   (begin 
+     (print x)
+     (let ((int y 5))
+          (print y)
+          (set y 25)
+          (print y)
+     )
+   )
+ )
+ (method void main ()
+   (call me foo 10)
+ )
+)
+
+"""]
+                
+    program3 = ["""
+    (class main
+ (method int i () (return))
+ (method string s () (return))
+ (method bool b () (return))
+ (method void main ()
+   (begin
+      (print (call me i))
+      (print (call me s))
+      (print (call me b))
+   )
+ )
+)
+
+"""]
+    program4 = ["""
+(class main
+ (method int foo () 
+   (return "abc"))
+ (method void main ()
+  (call me foo)
+ )
+)
+
+"""]
+    inter.run(program4)

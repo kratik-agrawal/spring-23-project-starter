@@ -14,6 +14,7 @@ class Type(Enum):
     STRING = 3
     CLASS = 4
     NOTHING = 5
+    VOID = 6
 
 
 # Represents a value, which has a type and its value

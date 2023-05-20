@@ -7,7 +7,7 @@ from env_v1 import EnvironmentManager
 from intbase import InterpreterBase, ErrorType
 from type_valuev1 import create_value
 from type_valuev1 import Type, Value
-
+from copy import deepcopy
 
 class ObjectDef:
     STATUS_PROCEED = 0
@@ -46,15 +46,56 @@ class ObjectDef:
         env = (
             EnvironmentManager()
         )  # maintains lexical environment for function; just params for now
+
+        # NEED TO CHECK VALUES FOR ACTUAL VS EXPECTING IN FORMAL - NAME ERROR
         for formal, actual in zip(method_info.formal_params, actual_params):
+            if self.__get_type(formal[0]) != actual.type():
+                self.interpreter.error(
+                    ErrorType.NAME_ERROR,
+                    "method call with wrong parameter types " + formal,
+                    line_num_of_caller,
+                )
             env.set(formal, actual)
+
         # since each method has a single top-level statement, execute it.
         status, return_value = self.__execute_statement(env, method_info.code)
+
+        # NEED TO DO RETURN TYPE CHECKING - TYPE ERROR
+        # For Void methods make sure it doesnt return anything
+        if method_info.method_return_type == InterpreterBase.VOID_DEF:
+            if status == ObjectDef.STATUS_RETURN and return_value != Value(Type.NOTHING, None):
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR,
+                    "returning something to a void method ",
+                    line_num_of_caller,
+                )
+            return Value(Type.NOTHING, None)
+        
+        # For all other methods make sure return type, if returning is correct
         # if the method explicitly used the (return expression) statement to return a value, then return that
-        # value back to the caller
-        if status == ObjectDef.STATUS_RETURN:
-            return return_value
-        # The method didn't explicitly return a value, so return a value of type nothing
+        # value back to the caller if it is the correct type
+        # print(status, return_value.type())
+        if status == ObjectDef.STATUS_RETURN and return_value.type() != Type.NOTHING:
+            if self.__get_type(method_info.method_return_type) != return_value.type():
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR,
+                    "wrong return type for method ",
+                    line_num_of_caller,
+                )
+            else:
+                return return_value
+
+        # NEED TO DO DEFAULT RETURN VALUES
+        # The method didn't explicitly return a value, so handle default values
+        if method_info.method_return_type == InterpreterBase.INT_DEF:
+            return create_value("0")
+        elif method_info.method_return_type == InterpreterBase.BOOL_DEF:
+            return create_value("false")
+        elif method_info.method_return_type == InterpreterBase.STRING_DEF:
+            return create_value("\"\"")
+        elif self.__get_type(method_info.method_return_type) == Type.CLASS:
+            return create_value("null")
+        
         return Value(InterpreterBase.NOTHING_DEF)
 
     def __execute_statement(self, env, code):
@@ -86,6 +127,8 @@ class ObjectDef:
             return self.__execute_input(env, code, False)
         if tok == InterpreterBase.PRINT_DEF:
             return self.__execute_print(env, code)
+        if tok == InterpreterBase.LET_DEF:
+            return self.__execute_let(env,code)
 
         self.interpreter.error(
             ErrorType.SYNTAX_ERROR, "unknown statement " + tok, tok.line_num
@@ -163,13 +206,21 @@ class ObjectDef:
             )
         param_val = env.get(var_name)
         if param_val is not None:
-            env.set(var_name, value)
+            if value.type() != param_val.type():
+               self.interpreter.error(
+                ErrorType.TYPE_ERROR, "set of wrong type " + var_name, line_num
+            ) 
+            env.set([param_val.type(), var_name], value)
             return
 
         if var_name not in self.fields:
             self.interpreter.error(
                 ErrorType.NAME_ERROR, "unknown variable " + var_name, line_num
             )
+        if self.fields[var_name].type() != value.type():
+            self.interpreter.error(
+                ErrorType.TYPE_ERROR, "set of wrong type field " + var_name, line_num
+            ) 
         self.fields[var_name] = value
 
     # (if expression (statement) (statement) ) where expresion could be a boolean constant (e.g., true), member
@@ -214,6 +265,39 @@ class ObjectDef:
                     status,
                     return_value,
                 )  # could be a valid return of a value or an error
+            
+    # (let (vars) (statements)... ) where vars are local variables and statements is like begin statement
+    def __execute_let(self, env, code):
+        #needs to do
+        envLocal = deepcopy(env)
+        local_vars = set()
+        for var in code[1]:
+            if var[1] in local_vars:
+                self.interpreter.error(
+                        ErrorType.NAME_ERROR,
+                        "duplicate local vars " + var[1]
+                    )
+            #check if type of value is fine
+            #add to envLocal
+            determined_value = create_value(var[2])
+            expected_type = self.__get_type(var[0])
+            if determined_value.type() != expected_type:
+                self.interpreter.error(
+                        ErrorType.TYPE_ERROR,
+                        "trying to set value of local var to wrong type " 
+                    )
+            envLocal.set(var[0:2],determined_value)
+            local_vars.add(var[2])
+        for statement in code[2:]:
+            status, return_value = self.__execute_statement(envLocal, statement)
+            if status == ObjectDef.STATUS_RETURN:
+                return (
+                    status,
+                    return_value,
+                )  # could be a valid return of a value or an error
+        # if we run thru the entire block without a return, then just return proceed
+        # we don't want the calling block to exit with a return
+        return ObjectDef.STATUS_PROCEED, None
 
     # given an expression, return a Value object with the expression's evaluated result
     # expressions could be: constants (true, 5, "blah"), variables (e.g., x), arithmetic/string/logical expressions
@@ -332,7 +416,14 @@ class ObjectDef:
     def __map_fields_to_values(self):
         self.fields = {}
         for field in self.class_def.get_fields():
-            self.fields[field.field_name] = create_value(field.default_field_value)
+            determined_value = create_value(field.default_field_value)
+            expected_value = self.__get_type(field.field_type)
+            if determined_value.type() != expected_value:
+                self.interpreter.error(
+                        ErrorType.TYPE_ERROR,
+                        "trying to set value of field to wrong type " 
+                    )
+            self.fields[field.field_name] = determined_value
 
     def __create_map_of_operations_to_lambdas(self):
         self.binary_op_list = [
@@ -391,3 +482,19 @@ class ObjectDef:
         self.unary_ops[Type.BOOL] = {
             "!": lambda a: Value(Type.BOOL, not a.value()),
         }
+
+    def __get_type(self, type):
+        if type == "bool":
+            return Type.BOOL
+        elif type == "int":
+            return Type.INT
+        elif type == "string":
+            return Type.STRING
+        elif type == "void":
+            return Type.VOID
+        else:
+            if type in self.interpreter.class_index:
+                return Type.CLASS
+            
+        return Type.NOTHING
+        #handle class stuff here?
