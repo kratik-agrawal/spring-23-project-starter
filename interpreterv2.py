@@ -69,6 +69,7 @@ class Interpreter(InterpreterBase):
 
     def __map_class_names_to_class_defs(self, program):
         self.class_index = {}
+        self.children = {}
         for item in program:
             if item[0] == InterpreterBase.CLASS_DEF:
                 if item[1] in self.class_index:
@@ -77,17 +78,15 @@ class Interpreter(InterpreterBase):
                         f"Duplicate class name {item[1]}",
                         item[0].line_num,
                     )
-                # if item[2] == InterpreterBase.INHERITS_DEF:
-                #     if item[3] not in self.class_index:
-                #         super().error(
-                #             ErrorType.TYPE_ERROR,
-                #             f"Trying to inherit from class that does not exist {item[3]}",
-                #             item[0].line_num,
-                #         )
-                #     else:
-                #         super_obj = self.instantiate(item[3], item[3].line_num)
-                #         self.class_index[item[1]] = ClassDef(item, self, super_obj)
+                if item[2] == InterpreterBase.INHERITS_DEF:
+                    if item[3] in self.children:
+                        self.children[item[3]].append(item[1])
+                    else:
+                        self.children[item[3]] = [item[1]]
                 self.class_index[item[1]] = ClassDef(item, self)
+    
+    def isChild(self, assumedparent, child):
+        return assumedparent in self.children and child in self.children[assumedparent]
 
 if __name__ == "__main__":
     inter = Interpreter()
@@ -102,8 +101,7 @@ if __name__ == "__main__":
             )
             )
         )
-        (method string foo ((string a) (string b)) (return (+ a b)))
-
+        
         (method void main ()
             (begin
             (print (call me value_or_zero 10))  
@@ -149,12 +147,28 @@ if __name__ == "__main__":
 
 """]
     program4 = ["""
+(class person 
+  (field string name "jane")
+  (method void set_name((string n)) (set name n))
+  (method string get_name() (return name))
+)
+
+(class student inherits person
+  (field int beers 3)
+  (field string student_name "studentname")
+  (method void set_beers((int g)) (set beers g))
+  (method int get_beers() (return beers))
+  (method person get_name() (return (new student)))
+)
+
 (class main
- (method int foo () 
-   (return "abc"))
- (method void main ()
-  (call me foo)
- )
+  (field student s null)
+  (method void main () 
+    (begin 
+      (set s (new student))
+      (print (call s get_name))
+    )
+  )
 )
 
 """]
@@ -212,4 +226,4 @@ if __name__ == "__main__":
 )
 
 """]
-    inter.run(program6)
+    inter.run(program4)

@@ -87,6 +87,7 @@ class ObjectDef:
         # if the method explicitly used the (return expression) statement to return a value, then return that
         # value back to the caller if it is the correct type
         # print(status, return_value.type())
+        # print("return val", return_value.type(), return_value.value().class_def.name)
         if status == ObjectDef.STATUS_RETURN and return_value.type() != Type.NOTHING:
             if self.__get_type(method_info.method_return_type) != return_value.type():
                 self.interpreter.error(
@@ -94,8 +95,16 @@ class ObjectDef:
                     "wrong return type for method ",
                     line_num_of_caller,
                 )
-            else:
-                return return_value
+            if return_value.type() == Type.CLASS:
+                if method_info.method_return_type != return_value.value().class_def.name:
+                    if self.interpreter.isChild(method_info.method_return_type, return_value.value().class_def.name) == False:
+                        self.interpreter.error(
+                            ErrorType.TYPE_ERROR,
+                            "wrong return type for method ",
+                            line_num_of_caller,
+                        )    
+            
+            return return_value
 
         # NEED TO DO DEFAULT RETURN VALUES
         # The method didn't explicitly return a value, so handle default values
@@ -317,6 +326,8 @@ class ObjectDef:
     def __evaluate_expression(self, env, expr, line_num_of_statement):
         if not isinstance(expr, list):
             # locals shadow member variables
+            if expr == InterpreterBase.ME_DEF:
+                return Value(Type.CLASS, self)
             val = env.get(expr)
             if val is not None:
                 return val
@@ -432,6 +443,7 @@ class ObjectDef:
         for field in self.class_def.get_fields():
             determined_value = create_value(field.default_field_value)
             expected_value = self.__get_type(field.field_type)
+            # print(field.field_type, field.default_field_value, determined_value.type(), expected_value)
             if determined_value.type() != expected_value:
                 self.interpreter.error(
                         ErrorType.TYPE_ERROR,
