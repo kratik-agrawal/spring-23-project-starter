@@ -41,10 +41,18 @@ class ClassDef:
 
     class definition: [class classname [field1 field2 ... method1 method2 ...]]
     """
+    
 
-    def __init__(self, class_def, interpreter):
+    def __init__(self, class_def, interpreter, super_class = None):
         self.interpreter = interpreter
         self.name = class_def[1]
+        # self.super_class = None
+        self.super_class_name = None
+        if class_def[2] == InterpreterBase.INHERITS_DEF:
+            # ?rint("inherit", class_def[3])
+            self.super_class_name = class_def[3]
+            self.__create_field_list(class_def[4:])
+            self.__create_method_list(class_def[4:])
         self.__create_field_list(class_def[2:])
         self.__create_method_list(class_def[2:])
 

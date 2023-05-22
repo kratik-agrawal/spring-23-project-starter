@@ -15,10 +15,11 @@ class ObjectDef:
     STATUS_NAME_ERROR = 2
     STATUS_TYPE_ERROR = 3
 
-    def __init__(self, interpreter, class_def, trace_output):
+    def __init__(self, interpreter, class_def, trace_output, super_class = None):
         self.interpreter = interpreter  # objref to interpreter object. used to report errors, get input, produce output
         self.class_def = class_def  # take class body from 3rd+ list elements, e.g., ["class",classname", [classbody]]
         self.trace_output = trace_output
+        self.super_class = super_class
         self.__map_fields_to_values()
         self.__map_method_names_to_method_definitions()
         self.__create_map_of_operations_to_lambdas()  # sets up maps to facilitate binary and unary operations, e.g., (+ 5 6)
@@ -31,18 +32,26 @@ class ObjectDef:
         The error is then generated at the source (i.e., where the call is initiated).
         """
         if method_name not in self.methods:
-            self.interpreter.error(
-                ErrorType.NAME_ERROR,
-                "unknown method " + method_name,
-                line_num_of_caller,
-            )
+            # print(self.super_class)
+            if self.super_class is not None:
+                # print("hi")
+                return self.super_class.call_method(method_name, actual_params, line_num_of_caller)
+            else:
+                self.interpreter.error(
+                    ErrorType.NAME_ERROR,
+                    "unknown method " + method_name,
+                    line_num_of_caller,
+                )
         method_info = self.methods[method_name]
         if len(actual_params) != len(method_info.formal_params):
-            self.interpreter.error(
-                ErrorType.TYPE_ERROR,
-                "invalid number of parameters in call to " + method_name,
-                line_num_of_caller,
-            )
+            if self.super_class is not None:
+                return self.super_class.call_method(method_name, actual_params, line_num_of_caller)
+            else:
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR,
+                    "invalid number of parameters in call to " + method_name,
+                    line_num_of_caller,
+                )
         env = (
             EnvironmentManager()
         )  # maintains lexical environment for function; just params for now
@@ -50,11 +59,14 @@ class ObjectDef:
         # NEED TO CHECK VALUES FOR ACTUAL VS EXPECTING IN FORMAL - NAME ERROR
         for formal, actual in zip(method_info.formal_params, actual_params):
             if self.__get_type(formal[0]) != actual.type():
-                self.interpreter.error(
-                    ErrorType.NAME_ERROR,
-                    "method call with wrong parameter types " + formal,
-                    line_num_of_caller,
-                )
+                if self.super_class is not None:
+                    return self.super_class.call_method(method_name, actual_params, line_num_of_caller)
+                else:
+                    self.interpreter.error(
+                        ErrorType.NAME_ERROR,
+                        "method call with wrong parameter types " + formal,
+                        line_num_of_caller,
+                    )
             env.set(formal, actual)
 
         # since each method has a single top-level statement, execute it.
@@ -392,6 +404,8 @@ class ObjectDef:
         obj_name = code[1]
         if obj_name == InterpreterBase.ME_DEF:
             obj = self
+        elif obj_name == InterpreterBase.SUPER_DEF:
+            obj = self.super_class
         else:
             obj = self.__evaluate_expression(
                 env, obj_name, line_num_of_statement

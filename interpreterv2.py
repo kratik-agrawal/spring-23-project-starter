@@ -3,10 +3,10 @@ The module that brings it all together! We intentionally keep this as small as p
 delegating functionality to various modules.
 """
 
-from classv1 import ClassDef
+from classv2 import ClassDef
 from intbase import InterpreterBase, ErrorType
 from bparser import BParser
-from objectv1 import ObjectDef
+from objectv2 import ObjectDef
 
 
 class Interpreter(InterpreterBase):
@@ -59,8 +59,11 @@ class Interpreter(InterpreterBase):
                 line_num_of_statement,
             )
         class_def = self.class_index[class_name]
+        super_obj = None
+        if class_def.super_class_name is not None:
+            super_obj = self.instantiate(class_def.super_class_name, 0)
         obj = ObjectDef(
-            self, class_def, self.trace_output
+            self, class_def, self.trace_output, super_obj
         )  # Create an object based on this class definition
         return obj
 
@@ -74,6 +77,16 @@ class Interpreter(InterpreterBase):
                         f"Duplicate class name {item[1]}",
                         item[0].line_num,
                     )
+                # if item[2] == InterpreterBase.INHERITS_DEF:
+                #     if item[3] not in self.class_index:
+                #         super().error(
+                #             ErrorType.TYPE_ERROR,
+                #             f"Trying to inherit from class that does not exist {item[3]}",
+                #             item[0].line_num,
+                #         )
+                #     else:
+                #         super_obj = self.instantiate(item[3], item[3].line_num)
+                #         self.class_index[item[1]] = ClassDef(item, self, super_obj)
                 self.class_index[item[1]] = ClassDef(item, self)
 
 if __name__ == "__main__":
@@ -145,4 +158,58 @@ if __name__ == "__main__":
 )
 
 """]
-    inter.run(program4)
+    
+    program5 = ["""
+    (class person
+  (field string name "anonymous")
+  (method void set_name ((string n)) (set name n))
+  (method void say_something () (print name " says hi"))
+)
+
+(class student inherits person
+  (field int student_id 0)
+  (method void set_id ((int id)) (set student_id id))
+  (method void say_something ()
+    (begin
+     (print "first")
+     (call super say_something)  
+     (print "second")
+    )
+  )
+)
+
+(class main
+  (field student s null)
+  (method void main ()
+    (begin
+      (set s (new student))
+      (call s set_name "julin")   
+(call s set_id 010123456)
+      (call s say_something)	 
+    )
+  )
+)
+
+    """]
+
+    program6 = ["""
+    (class foo
+ (method void f ((int x)) (print x))
+)
+(class bar inherits foo
+ (method void f ((int x) (int y)) (print x " " y))
+)
+
+(class main
+ (field bar b null)
+ (method void main ()
+   (begin
+     (set b (new bar))
+     (call b f 10)  
+     (call b f 10 20)
+   )
+ )
+)
+
+"""]
+    inter.run(program6)
