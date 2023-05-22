@@ -58,6 +58,16 @@ class ObjectDef:
 
         # NEED TO CHECK VALUES FOR ACTUAL VS EXPECTING IN FORMAL - NAME ERROR
         for formal, actual in zip(method_info.formal_params, actual_params):
+            if actual.type() == Type.CLASS and self.__get_type(formal[0]) == actual.type():
+                if formal[0] != actual.value().class_def.name and self.interpreter.isChild(formal[0], actual.value().class_def.name) == False:
+                    if self.super_class is not None:
+                        return self.super_class.call_method(method_name, actual_params, line_num_of_caller)
+                    else:
+                        self.interpreter.error(
+                            ErrorType.NAME_ERROR,
+                            "method call with wrong parameter types " + formal[0],
+                            line_num_of_caller,
+                        )
             if self.__get_type(formal[0]) != actual.type():
                 if self.super_class is not None:
                     return self.super_class.call_method(method_name, actual_params, line_num_of_caller)

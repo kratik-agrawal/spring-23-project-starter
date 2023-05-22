@@ -207,23 +207,31 @@ if __name__ == "__main__":
     """]
 
     program6 = ["""
-    (class foo
- (method void f ((int x)) (print x))
+(class person
+  (field string name "jane")
+  (method void say_something () (print name " says hi")
+  )
 )
-(class bar inherits foo
- (method void f ((int x) (int y)) (print x " " y))
+
+(class student inherits person
+  (method void say_something ()
+    (print "Can I have an extension?")
+  )
 )
 
 (class main
- (field bar b null)
- (method void main ()
-   (begin
-     (set b (new bar))
-     (call b f 10)  
-     (call b f 10 20)
-   )
- )
+  (field person p null)
+  (method void foo ((student p)) 
+    (call p say_something)
+  )
+  (method void main ()
+    (begin
+      (set p (new person)) 
+                               
+      (call me foo p)               
+    )
+  )
 )
 
 """]
-    inter.run(program4)
+    inter.run(program6)
