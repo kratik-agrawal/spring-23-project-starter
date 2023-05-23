@@ -48,7 +48,7 @@ class ObjectDef:
                 return self.super_class.call_method(method_name, actual_params, line_num_of_caller)
             else:
                 self.interpreter.error(
-                    ErrorType.TYPE_ERROR,
+                    ErrorType.NAME_ERROR,
                     "invalid number of parameters in call to " + method_name,
                     line_num_of_caller,
                 )
@@ -74,7 +74,7 @@ class ObjectDef:
                 else:
                     self.interpreter.error(
                         ErrorType.NAME_ERROR,
-                        "method call with wrong parameter types " + formal,
+                        "method call with wrong parameter types " + formal[0],
                         line_num_of_caller,
                     )
             env.set(formal, actual)
@@ -258,8 +258,8 @@ class ObjectDef:
         for fld in self.class_def.get_fields():
             if fld.field_name == var_name:
                 field_type = fld.field_type
-        print(value.type(), value.value(), self.class_def.get_fields(), self.fields[var_name].type(), self.fields[var_name].value())
-        if value.type() == Type.CLASS and (value.value().class_def.name != field_type \
+        # print(value.type(), value.value(), self.class_def.get_fields(), self.fields[var_name].type(), self.fields[var_name].value())
+        if value.type() == Type.CLASS and value.value() is not None and (value.value().class_def.name != field_type \
                                                and self.interpreter.isChild(field_type, value.value().class_def.name) == False):
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR, "set variable doesn't apply to poly", line_num

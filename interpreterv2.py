@@ -214,25 +214,12 @@ if __name__ == "__main__":
     """]
 
     program6 = ["""
-(class main
-  (method void main ()
-    (call me foo (new animal) (new dog))
-  )
-  (method animal foo ((animal a) (dog d))
-    (begin 
-        (set d null)
-        (return (new dog))
-    )
-    
-  )
-)
-(class animal
-  (method void breathe () (return 1))
-)
-(class dog inherits animal
-  (method void breathe () (return 1))
-)
 
+(class main
+  (field bool p "hi")
+  (method void main ()
+  )
+)
 
 """]
     inter.run(program6)
