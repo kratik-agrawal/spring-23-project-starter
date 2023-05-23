@@ -211,26 +211,20 @@ if __name__ == "__main__":
     """]
 
     program6 = ["""
-(class b
-  (method void main () (return))
-)
-(class d inherits b
-  (method void main () (return))
-)
-(class dd inherits d
-  (method void main () (return))
-)
-(class ddd inherits dd
-  (method void main () (return))
-)
-
 (class main
-  (field dd dd null)
   (method void main ()
-    (set dd (new d))
+    (call me foo (new animal) (new dog))
+  )
+  (method void foo ((animal a) (dog d))
+    (set d a)
   )
 )
-
+(class animal
+  (method void breathe () (return 1))
+)
+(class dog inherits animal
+  (method void breathe () (return 1))
+)
 
 
 """]

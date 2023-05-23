@@ -93,5 +93,16 @@ class ClassDef:
                         "duplicate method " + member[2],
                         member[0].line_num,
                     )
+                    
+                formal_params = set()
+                for v in member[3]:
+                    if v[1] in formal_params:
+                        self.interpreter.error(
+                            ErrorType.NAME_ERROR,
+                            "duplicate formal params " + member[2],
+                            member[0].line_num,
+                        )
+                    else:
+                        formal_params.add(v[1])
                 self.methods.append(MethodDef(member))
                 methods_defined_so_far.add(member[2])
