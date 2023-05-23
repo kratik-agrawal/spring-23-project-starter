@@ -78,6 +78,9 @@ class Interpreter(InterpreterBase):
                         f"Duplicate class name {item[1]}",
                         item[0].line_num,
                     )
+                
+                self.children[item[1]] = ["null"]
+                
                 if item[2] == InterpreterBase.INHERITS_DEF:
                     if item[3] in self.children:
                         self.children[item[3]].append(item[1])
@@ -215,8 +218,12 @@ if __name__ == "__main__":
   (method void main ()
     (call me foo (new animal) (new dog))
   )
-  (method void foo ((animal a) (dog d))
-    (set d a)
+  (method animal foo ((animal a) (dog d))
+    (begin 
+        (set d null)
+        (return (new dog))
+    )
+    
   )
 )
 (class animal

@@ -243,7 +243,7 @@ class ObjectDef:
                 ErrorType.TYPE_ERROR, "set of wrong type " + var_name, line_num
             ) 
             # print(value.value().class_def.name, env.get_type(var_name))
-            if value.type() == Type.CLASS and (value.value().class_def.name != env.get_type(var_name) \
+            if value.type() == Type.CLASS and value.value() is not None and (value.value().class_def.name != env.get_type(var_name) \
                                                and self.interpreter.isChild(env.get_type(var_name), value.value().class_def.name) == False):
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR, "set variable doesn't apply to poly", line_num
