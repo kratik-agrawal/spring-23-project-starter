@@ -85,10 +85,11 @@ class ObjectDef:
         # NEED TO DO RETURN TYPE CHECKING - TYPE ERROR
         # For Void methods make sure it doesnt return anything
         if method_info.method_return_type == InterpreterBase.VOID_DEF:
-            if status == ObjectDef.STATUS_RETURN and return_value != Value(Type.NOTHING, None):
+            # print(status, return_value.type())
+            if status == ObjectDef.STATUS_RETURN and return_value.type() != Type.NOTHING:
                 self.interpreter.error(
                     ErrorType.TYPE_ERROR,
-                    "returning something to a void method ",
+                    "returning something to a void method " + method_info.method_name + method_info.method_return_type,
                     line_num_of_caller,
                 )
             return Value(Type.NOTHING, None)
@@ -106,7 +107,7 @@ class ObjectDef:
                     line_num_of_caller,
                 )
             if return_value.type() == Type.CLASS:
-                if method_info.method_return_type != return_value.value().class_def.name:
+                if return_value.value() != None and method_info.method_return_type != return_value.value().class_def.name:
                     if self.interpreter.isChild(method_info.method_return_type, return_value.value().class_def.name) == False:
                         self.interpreter.error(
                             ErrorType.TYPE_ERROR,
@@ -241,6 +242,11 @@ class ObjectDef:
                self.interpreter.error(
                 ErrorType.TYPE_ERROR, "set of wrong type " + var_name, line_num
             ) 
+            if value.type() == Type.CLASS and (value.value().class_def.name != env.get_type(var_name) \
+                                               and self.interpreter.isChild(env.get_type(var_name), value.value().class_def.name == False)):
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, "set variable doesn't apply to poly", line_num
+                )
             env.set([param_val.type(), var_name], value)
             return
 
@@ -248,6 +254,15 @@ class ObjectDef:
             self.interpreter.error(
                 ErrorType.NAME_ERROR, "unknown variable " + var_name, line_num
             )
+        for fld in self.class_def.get_fields():
+            if fld.field_name == var_name:
+                field_type = fld.field_type
+        print(value.type(), value.value(), self.class_def.get_fields(), self.fields[var_name].type(), self.fields[var_name].value())
+        if value.type() == Type.CLASS and (value.value().class_def.name != field_type \
+                                               and self.interpreter.isChild(field_type, value.value().class_def.name) == False):
+                self.interpreter.error(
+                    ErrorType.TYPE_ERROR, "set variable doesn't apply to poly", line_num
+                )
         if self.fields[var_name].type() != value.type():
             self.interpreter.error(
                 ErrorType.TYPE_ERROR, "set of wrong type field " + var_name, line_num

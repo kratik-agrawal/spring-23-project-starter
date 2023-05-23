@@ -83,6 +83,10 @@ class Interpreter(InterpreterBase):
                         self.children[item[3]].append(item[1])
                     else:
                         self.children[item[3]] = [item[1]]
+                    for cls in self.children.keys():
+                        if item[3] in self.children[cls]:
+                            self.children[cls].append(item[1])
+                        
                 self.class_index[item[1]] = ClassDef(item, self)
     
     def isChild(self, assumedparent, child):
@@ -207,31 +211,27 @@ if __name__ == "__main__":
     """]
 
     program6 = ["""
-(class person
-  (field string name "jane")
-  (method void say_something () (print name " says hi")
-  )
+(class b
+  (method void main () (return))
 )
-
-(class student inherits person
-  (method void say_something ()
-    (print "Can I have an extension?")
-  )
+(class d inherits b
+  (method void main () (return))
+)
+(class dd inherits d
+  (method void main () (return))
+)
+(class ddd inherits dd
+  (method void main () (return))
 )
 
 (class main
-  (field person p null)
-  (method void foo ((student p)) 
-    (call p say_something)
-  )
+  (field dd dd null)
   (method void main ()
-    (begin
-      (set p (new person)) 
-                               
-      (call me foo p)               
-    )
+    (set dd (new d))
   )
 )
+
+
 
 """]
     inter.run(program6)
