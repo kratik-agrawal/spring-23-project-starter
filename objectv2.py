@@ -10,6 +10,7 @@ class ObjectDef:
     # statement execution results
     STATUS_PROCEED = 0
     STATUS_RETURN = 1
+    STATUS_EXCEPTION_THROWN = 2
 
     # type constants
     INT_TYPE_CONST = Type(InterpreterBase.INT_DEF)
@@ -143,6 +144,10 @@ class ObjectDef:
             return self.__execute_print(env, code)
         elif tok == InterpreterBase.LET_DEF:
             return self.__execute_let(env, return_type, code)
+        elif tok == InterpreterBase.THROW_DEF:
+            return self.__execute_throw(env, return_type, code)
+        elif tok == InterpreterBase.TRY_DEF:
+            return self.__execute_try(env, return_type, code)
         else:
             # Report error via interpreter
             self.interpreter.error(
@@ -178,7 +183,10 @@ class ObjectDef:
             # vardef in the form of (typename varname defvalue)
             var_type = Type(var_def[0])
             var_name = var_def[1]
-            default_value = create_value(var_def[2])
+            if len(var_def) == 3:
+                default_value = create_value(var_def[2])
+            else:
+                default_value = create_default_value(var_def[0])
             # make sure default value for each local is of a matching type
             self.__check_type_compatibility(
                 var_type, default_value.type(), True, line_number
@@ -196,6 +204,19 @@ class ObjectDef:
     # uses helper function __execute_begin to implement its functionality
     def __execute_let(self, env, return_type, code):
         return self.__execute_begin(env, return_type, code, True)
+
+    # (throw (string expr))
+    def __execute_throw(self, env, return_type, code):
+        # evaluate the second variable
+        # check if string. Treat like a return variable so make sure "execute statement gets it"
+        # Need to update begin, if, while for appropriate result when a exception is thrown
+        # Need to add something like a ObjectDef.Status_Exception_thrown
+        return "abc"
+    
+    # (try (statement-to-try) (catch) )
+    def __execute_try(self, env, return_type, code):
+        # create a new env that adds an exception variable - set it to nothing/null at first
+        return "abc"
 
     # (call object_ref/me methodname param1 param2 param3)
     # where params are expressions, and expresion could be a value, or a (+ ...)
