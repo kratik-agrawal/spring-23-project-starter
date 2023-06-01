@@ -115,7 +115,7 @@ if __name__ == "__main__":
  (method void main ()
   (begin
     (try
-       (call me bar (call me foo))
+       (call me bar (call me bar (+ 5 (call me foo))))
        (print exception)
     )
   )

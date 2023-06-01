@@ -421,6 +421,11 @@ class ObjectDef:
         if operator in self.binary_op_list:
             operand1 = self.__evaluate_expression(env, expr[1], line_num_of_statement)
             operand2 = self.__evaluate_expression(env, expr[2], line_num_of_statement)
+            if type(operand1) is tuple:
+                return operand1
+            if type(operand2) is tuple:
+                return operand2
+                
             if (
                 operand1.type() == operand2.type()
                 and operand1.type() == ObjectDef.INT_TYPE_CONST
