@@ -98,3 +98,23 @@ class Interpreter(InterpreterBase):
                 if item[2] == InterpreterBase.INHERITS_DEF:
                     superclass_name = item[3]
                 self.type_manager.add_class_type(class_name, superclass_name)
+
+
+if __name__ == "__main__":
+    tester = Interpreter()
+
+    program = ["""
+        (class main
+            (field int x)
+            (field bool y)
+            (method void main ()
+                (begin
+                    (print 1)
+                    (print 2)
+                    (print x)
+                    (print y)
+                )
+            )
+        )
+    """]
+    tester.run(program)

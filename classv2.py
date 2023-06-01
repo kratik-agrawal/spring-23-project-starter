@@ -149,8 +149,9 @@ class ClassDef:
     # returns a VariableDef object that represents that field
     def __create_variable_def_from_field(self, field_def):
         if len(field_def) == 3:
+            # print(field_def)
             var_def = VariableDef(
-                Type(field_def[1]), field_def[2], create_default_value(field_def[1])
+                Type(field_def[1]), field_def[2], create_default_value(Type(field_def[1]))
             )   
         else: 
             var_def = VariableDef(
