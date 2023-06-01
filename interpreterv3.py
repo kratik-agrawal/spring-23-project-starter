@@ -105,16 +105,21 @@ if __name__ == "__main__":
 
     program = ["""
         (class main
-            (field int x)
-            (field bool y)
-            (method void main ()
-                (begin
-                    (print 1)
-                    (print 2)
-                    (print x)
-                    (print y)
-                )
+        (method void foo ((int x))
+        (begin 
+            (print x)
+            (let ((int y) (bool a) (int z 3))
+                (print y)
+                (print a)
+                (print z)
+                (set y 25)
+                (print y)
             )
+        )
+        )
+        (method void main ()
+        (call me foo 10)
+        )
         )
     """]
     tester.run(program)
