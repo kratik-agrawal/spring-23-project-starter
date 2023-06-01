@@ -104,22 +104,32 @@ if __name__ == "__main__":
     tester = Interpreter()
 
     program = ["""
-        (class main
-        (method void foo ((int x))
-        (begin 
-            (print x)
-            (let ((int y) (bool a) (int z 3))
-                (print y)
-                (print a)
-                (print z)
-                (set y 25)
-                (print y)
-            )
-        )
-        )
-        (method void main ()
-        (call me foo 10)
-        )
-        )
+(class main
+  (method void bar2 ()
+     (begin
+        (print "hi")
+        (throw "foo")
+        (print "bye")
+     )
+  )
+  (method void bar ()
+     (begin
+        (print "hi")
+        (call me bar2)
+        (print "bye")
+     )
+  )
+  (method void main ()
+    (begin
+      (try
+       (call me bar)
+       (print "The thrown exception was: " exception)
+      )
+      (print "done!")
+    )
+  )
+)
+
+
     """]
     tester.run(program)

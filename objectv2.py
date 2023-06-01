@@ -94,6 +94,10 @@ class ObjectDef:
         )
         # if the method explicitly used the (return expression) statement to return a value, then return that
         # value back to the caller
+        # print(status, return_value.type().type_name, return_value.value())
+        if status == ObjectDef.STATUS_EXCEPTION_THROWN:
+            # print(status, return_value)
+            return status, return_value
         if status == ObjectDef.STATUS_RETURN and return_value is not None:
             return return_value
         # The method didn't explicitly return a value, so return the default return type for the method
@@ -171,6 +175,8 @@ class ObjectDef:
             status, return_value = self.__execute_statement(env, return_type, statement)
             if status == ObjectDef.STATUS_RETURN:
                 break
+            if status == ObjectDef.STATUS_EXCEPTION_THROWN:
+                break
         # if we run through the entire block without a return, then just return proceed
         # we don't want the enclosing block to exit with a return
         if has_vardef:
@@ -212,20 +218,50 @@ class ObjectDef:
         # check if string. Treat like a return variable so make sure "execute statement gets it"
         # Need to update begin, if, while for appropriate result when a exception is thrown
         # Need to add something like a ObjectDef.Status_Exception_thrown
-        return "abc"
+        # print(code)
+        term = self.__evaluate_expression(env, code[1], code[0].line_num)
+        val = term.value()
+        typ = term.type()
+        # print(val, typ, typ.type_name)
+        if typ != Type(InterpreterBase.STRING_DEF):
+            self.interpreter.error(
+                    ErrorType.TYPE_ERROR,
+                    "throwing a non string error",
+                    code[0].line_num
+                )
+        return ObjectDef.STATUS_EXCEPTION_THROWN, term
     
     # (try (statement-to-try) (catch) )
     def __execute_try(self, env, return_type, code):
         # create a new env that adds an exception variable - set it to nothing/null at first
-        return "abc"
+        # print(code)
+        status, return_value = self.__execute_statement(env, return_type, code[1])
+        # print(status, return_value)
+        if status != ObjectDef.STATUS_EXCEPTION_THROWN:
+            return status, return_value
+        
+        env.block_nest()
+        var_type = Type(InterpreterBase.STRING_DEF)
+        var_name = 'exception'
+        env.create_new_symbol(var_name)
+        var_def = VariableDef(var_type, var_name, return_value)
+        env.set(var_name, var_def)
+        
+        # print("testing here", var_def.type.type_name, var_def.name)
+        status_catch, return_value_catch = self.__execute_statement(env, return_type, code[2])
+        env.block_unnest()
+        return status_catch, return_value_catch
 
     # (call object_ref/me methodname param1 param2 param3)
     # where params are expressions, and expresion could be a value, or a (+ ...)
     # statement version of a method call; there's also an expression version of a method call below
     def __execute_call(self, env, code):
-        return ObjectDef.STATUS_PROCEED, self.__execute_call_aux(
+        result = self.__execute_call_aux(
             env, code, code[0].line_num
         )
+        if type(result) is tuple:
+            return result[0], result[1]
+        return ObjectDef.STATUS_PROCEED, result
 
     # (set varname expression), where expression could be a value, or a (+ ...)
     def __execute_set(self, env, code):
@@ -253,6 +289,7 @@ class ObjectDef:
 
     # (print expression1 expression2 ...) where expresion could be a variable, value, or a (+ ...)
     def __execute_print(self, env, code):
+        # print(code)
         output = ""
         for expr in code[1:]:
             # TESTING NOTE: Will not test printing of object references
@@ -332,6 +369,11 @@ class ObjectDef:
                 return ObjectDef.STATUS_PROCEED, None
             # condition is true, run body of while loop
             status, return_value = self.__execute_statement(env, return_type, code[2])
+            if status == ObjectDef.STATUS_EXCEPTION_THROWN:
+                return (
+                    status,
+                    return_value,
+                )  # could be a valid return of a value or an error
             if status == ObjectDef.STATUS_RETURN:
                 return (
                     status,
@@ -352,7 +394,9 @@ class ObjectDef:
     def __evaluate_expression(self, env, expr, line_num_of_statement):
         if type(expr) is not list:
             # locals shadow member variables
+            # print(expr)
             var_def = env.get(expr)
+            # print(var_def)
             if var_def is not None:
                 return self.__propagate_type_to_null(var_def)
             elif expr in self.fields:
