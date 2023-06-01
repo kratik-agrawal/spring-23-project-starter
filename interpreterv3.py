@@ -87,6 +87,14 @@ class Interpreter(InterpreterBase):
                         item[0].line_num,
                     )
                 self.class_index[item[1]] = ClassDef(item, self)
+            if item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
+                if item[1] in self.class_index:
+                    super().error(
+                        ErrorType.TYPE_ERROR,
+                        f"Duplicate class name {item[1]}",
+                        item[0].line_num,
+                    )
+                self.class_index[item[1]] = ClassDef(item, self)
 
     # [class classname inherits superclassname [items]]
     def __add_all_class_types_to_type_manager(self, parsed_program):
@@ -104,25 +112,27 @@ if __name__ == "__main__":
     tester = Interpreter()
 
     program = ["""
-(class main
- (method int foo () 
-   (throw "blah")
- )
- (method int bar ((int x)) 
-   (print x)
- )
+        (class main
+            (method int foo () 
+                (throw "blah")
+            )
+            (method int bar ((int x)) 
+                (return x)
+            )
 
- (method void main ()
-  (begin
-    (try
-       (call me bar (call me bar (+ 5 (call me foo))))
-       (print exception)
-    )
-  )
- )
-)
-
-
+            (method void main ()
+                (begin
+                    (try
+                        (throw "abc")
+                        (try
+                            (print exception)
+                            (print exception)
+                        )
+                    )
+                    
+                )
+            )
+        )
 
     """]
     tester.run(program)

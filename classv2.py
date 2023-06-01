@@ -94,6 +94,7 @@ class ClassDef:
         self.interpreter = interpreter
         self.name = class_source[1]
         self.class_source = class_source
+        self.template = False
         fields_and_methods_start_index = (
             self.__check_for_inheritance_and_set_superclass_info(class_source)
         )
@@ -117,16 +118,18 @@ class ClassDef:
         return self.super_class
 
     def __check_for_inheritance_and_set_superclass_info(self, class_source):
-        if class_source[2] != InterpreterBase.INHERITS_DEF:
+        if class_source[0] != InterpreterBase.TEMPLATE_CLASS_DEF and class_source[2] != InterpreterBase.INHERITS_DEF:
             self.super_class = None
             return 2  # fields and method definitions start after [class classname ...], jump to the correct place to continue parsing
-
-        super_class_name = class_source[3]
-        self.super_class = self.interpreter.get_class_def(
-            super_class_name, class_source[0].line_num
-        )
-        return 4  # fields and method definitions start after [class classname inherits baseclassname ...]
-
+        if class_source[2] == InterpreterBase.INHERITS_DEF:
+            super_class_name = class_source[3]
+            self.super_class = self.interpreter.get_class_def(
+                super_class_name, class_source[0].line_num
+            )
+            return 4  # fields and method definitions start after [class classname inherits baseclassname ...]
+        if class_source[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
+            self.num_parameterized_types = len(class_source[2])
+            
     def __create_field_list(self, class_body):
         self.fields = []  # array of VariableDefs with default values set
         self.field_map = {}

@@ -266,6 +266,8 @@ class ObjectDef:
     # (set varname expression), where expression could be a value, or a (+ ...)
     def __execute_set(self, env, code):
         val = self.__evaluate_expression(env, code[2], code[0].line_num)
+        if type(val) is tuple:
+            return val[0], val[1]
         self.__set_variable_aux(
             env, code[1], val, code[0].line_num
         )  # checks/reports type and name errors
@@ -279,6 +281,8 @@ class ObjectDef:
         else:
             result = self.__evaluate_expression(env, code[1], code[0].line_num)
             # CAREY FIX
+            if type(result) is tuple:
+                return result[0], result[1]
             if result.is_typeless_null():
                 self.__check_type_compatibility(return_type, result.type(), True, code[0].line_num) 
                 result = Value(return_type, None)  # propagate return type to null ###
@@ -294,6 +298,8 @@ class ObjectDef:
         for expr in code[1:]:
             # TESTING NOTE: Will not test printing of object references
             term = self.__evaluate_expression(env, expr, code[0].line_num)
+            if type(term) is tuple:
+                return term[0], term[1]
             val = term.value()
             typ = term.type()
             if typ == ObjectDef.BOOL_TYPE_CONST:
@@ -335,6 +341,8 @@ class ObjectDef:
     # variable without ()s, or a boolean expression in parens, like (> 5 a)
     def __execute_if(self, env, return_type, code):
         condition = self.__evaluate_expression(env, code[1], code[0].line_num)
+        if type(condition) is tuple:
+            return condition[0], condition[1]
         if condition.type() != ObjectDef.BOOL_TYPE_CONST:
             self.interpreter.error(
                 ErrorType.TYPE_ERROR,
@@ -522,7 +530,7 @@ class ObjectDef:
         else:
             # return a Value() object which has a type and a value
             obj_val = self.__evaluate_expression(env, obj_name, line_num_of_statement)
-            print("val", obj_val)
+            # print("val", obj_val)
             if obj_val.is_null():
                 self.interpreter.error(
                     ErrorType.FAULT_ERROR, "null dereference", line_num_of_statement
