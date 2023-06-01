@@ -105,30 +105,23 @@ if __name__ == "__main__":
 
     program = ["""
 (class main
-  (method void bar2 ()
-     (begin
-        (print "hi")
-        (throw "foo")
-        (print "bye")
-     )
-  )
-  (method void bar ()
-     (begin
-        (print "hi")
-        (call me bar2)
-        (print "bye")
-     )
-  )
-  (method void main ()
-    (begin
-      (try
-       (call me bar)
-       (print "The thrown exception was: " exception)
-      )
-      (print "done!")
+ (method int foo () 
+   (throw "blah")
+ )
+ (method int bar ((int x)) 
+   (print x)
+ )
+
+ (method void main ()
+  (begin
+    (try
+       (call me bar (call me foo))
+       (print exception)
     )
   )
+ )
 )
+
 
 
     """]

@@ -517,6 +517,7 @@ class ObjectDef:
         else:
             # return a Value() object which has a type and a value
             obj_val = self.__evaluate_expression(env, obj_name, line_num_of_statement)
+            print("val", obj_val)
             if obj_val.is_null():
                 self.interpreter.error(
                     ErrorType.FAULT_ERROR, "null dereference", line_num_of_statement
@@ -525,6 +526,9 @@ class ObjectDef:
         # prepare the actual arguments for passing
         actual_args = []
         for expr in code[3:]:
+            evaluated = self.__evaluate_expression(env, expr, line_num_of_statement)
+            if type(evaluated) is tuple:
+                return evaluated[0], evaluated[1]
             actual_args.append(
                 self.__evaluate_expression(env, expr, line_num_of_statement)
             )
