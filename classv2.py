@@ -58,7 +58,11 @@ class MethodDef:
         if method_source[1] == InterpreterBase.VOID_DEF:
             self.return_type = Type(InterpreterBase.NOTHING_DEF)
         else:
-            self.return_type = Type(method_source[1])
+            if '@' in method_source[1]:
+                val =  method_source[1]
+                self.return_type = Type(val[:val.find('@')], method_source[1])
+            else:
+                self.return_type = Type(method_source[1])
         self.formal_params = self.__parse_params(method_source[3])
         self.code = method_source[4]
 
