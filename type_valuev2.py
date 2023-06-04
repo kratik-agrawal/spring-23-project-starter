@@ -98,8 +98,16 @@ class TypeManager:
     def is_valid_type(self, typename):
         if '@' in typename:
             typename_split = typename.split('@')
-            return typename_split[0] in self.map_typename_to_type \
+            
+            firstflag =  typename_split[0] in self.map_typename_to_type \
                 and len(typename_split[1:]) == self.template_classname_num_types[typename_split[0]]
+            secondflag = True
+            for vartype in typename_split[1:]:
+                if not self.is_valid_type(vartype):
+                    secondflag = False
+                    break
+            return firstflag and secondflag
+                
         return typename in self.map_typename_to_type
 
     # return Type object for specified typename string

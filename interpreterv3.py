@@ -148,10 +148,10 @@ if __name__ == "__main__":
 
 (class main
   (method void main ()
-    (let ((Square s) (Dog d) (MyTemplatedClass@Square@Dog t))
+    (let ((Square s) (Dog d) (MyTemplatedClass@tsring@bool t))
       (set s (new Square))
       (set d (new Dog))
-      (set t (new MyTemplatedClass@Square@Dog))
+      (set t (new MyTemplatedClass@tsring@bool))
       (call t act s d)
     )
   )
