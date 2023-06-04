@@ -514,8 +514,13 @@ class ObjectDef:
     # (new classname)
     def __execute_new_aux(self, env, code, line_num_of_statement):
         class_name = code[1]
+        
         obj = self.interpreter.instantiate(code[1], line_num_of_statement)
+        print(class_name)
+        print("h2")
         if '@' in class_name:
+            print("hi")
+            print(class_name[0:class_name.find('@')], class_name)
             return Value(Type(class_name[0:class_name.find('@')], full_name=class_name), obj)
         return Value(Type(class_name), obj)
 
