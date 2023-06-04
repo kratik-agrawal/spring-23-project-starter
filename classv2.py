@@ -135,6 +135,13 @@ class ClassDef:
                     )
                 if member[1] in self.parameterized_types:
                     member[1] = self.parameterized_types[member[1]]
+                if '@' in member[1]:
+                    temp = member[1].split('@')
+                    for t in temp:
+                        if t in self.parameterized_types:
+                            t = self.parameterized_types[t]
+                    member[1] = '@'.join(temp)
+                    
                 var_def = self.__create_variable_def_from_field(member)
                 self.fields.append(var_def)
                 self.field_map[member[2]] = var_def
@@ -266,13 +273,36 @@ class ClassDef:
     def __create_variable_def_from_field(self, field_def):
         if len(field_def) == 3:
             # print(field_def)
-            var_def = VariableDef(
-                Type(field_def[1]), field_def[2], create_default_value(Type(field_def[1]))
-            )   
-        else: 
-            var_def = VariableDef(
-                Type(field_def[1]), field_def[2], create_value(field_def[3])
-            )
+            if '@' in field_def[1]:
+                print(field_def[1])
+                if not self.interpreter.is_valid_type(field_def[1]):
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR,
+                        "invalid use of templated class"
+                    )
+                var_def = VariableDef(
+                    Type(field_def[1]), field_def[2], create_default_value(Type(field_def[1][0:field_def[1].find('@')]))
+                )
+            else:
+                var_def = VariableDef(
+                    Type(field_def[1]), field_def[2], create_default_value(Type(field_def[1]))
+                )   
+        else:
+            if '@' in field_def[1]:
+                print(field_def[1])
+                if not self.interpreter.is_valid_type(field_def[1]):
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR,
+                        "invalid use of templated class"
+                    )
+                var_def = VariableDef(
+                    Type(field_def[1]), field_def[2], create_value(field_def[3])
+                )
+            else: 
+                var_def = VariableDef(
+                    Type(field_def[1]), field_def[2], create_value(field_def[3])
+                )
+        print(var_def.type.type_name, var_def.value.type().type_name)
         if not self.interpreter.check_type_compatibility(
             var_def.type, var_def.value.type(), True
         ):

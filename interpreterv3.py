@@ -95,8 +95,9 @@ class Interpreter(InterpreterBase):
 
     def __map_class_names_to_class_defs(self, program):
         self.class_index = {}
+        ## Doing duplicate to get all classdefs for templated classes first
         for item in program:
-            if item[0] == InterpreterBase.CLASS_DEF or item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
+            if item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
                 if item[1] in self.class_index:
                     super().error(
                         ErrorType.TYPE_ERROR,
@@ -105,7 +106,19 @@ class Interpreter(InterpreterBase):
                     )
                 self.class_index[item[1]] = ClassDef(item, self)
                 if item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
-                    self.type_manager.add_templated_nums(item[1], self.class_index[item[1]].num_parameterized_types)
+                    self.type_manager.add_templated_vals(item[1], \
+                                                         self.class_index[item[1]].num_parameterized_types, \
+                                                         self.class_index[item[1]].parameterized_types_arr)
+                                                         
+        for item in program:
+            if item[0] == InterpreterBase.CLASS_DEF:
+                if item[1] in self.class_index:
+                    super().error(
+                        ErrorType.TYPE_ERROR,
+                        f"Duplicate class name {item[1]}",
+                        item[0].line_num,
+                    )
+                self.class_index[item[1]] = ClassDef(item, self)
 
     # [class classname inherits superclassname [items]]
     def __add_all_class_types_to_type_manager(self, parsed_program):

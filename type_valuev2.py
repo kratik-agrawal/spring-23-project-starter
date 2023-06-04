@@ -81,6 +81,7 @@ class TypeManager:
     def __init__(self):
         self.map_typename_to_type = {}
         self.template_classname_num_types = {}
+        self.template_classname_param_types = {}
         self.__setup_primitive_types()
 
     # used to register a new class name (and its supertype name, if present as a valid type so it can be used
@@ -91,9 +92,10 @@ class TypeManager:
         class_type = Type(class_name, superclass_name)
         self.map_typename_to_type[class_name] = class_type
     
-    def add_templated_nums(self, class_name, num_param):
+    def add_templated_vals(self, class_name, num_params, param_names):
         # class_type = Type(class_name, None)
-        self.template_classname_num_types[class_name] = num_param
+        self.template_classname_num_types[class_name] = num_params
+        self.template_classname_param_types[class_name] = param_names
 
     def is_valid_type(self, typename):
         if '@' in typename:
@@ -103,9 +105,11 @@ class TypeManager:
                 and len(typename_split[1:]) == self.template_classname_num_types[typename_split[0]]
             secondflag = True
             for vartype in typename_split[1:]:
+                print(vartype)
                 if not self.is_valid_type(vartype):
-                    secondflag = False
-                    break
+                    if vartype not in self.template_classname_param_types[typename_split[0]]:
+                        secondflag = False
+                        break
             return firstflag and secondflag
                 
         return typename in self.map_typename_to_type
@@ -144,6 +148,7 @@ class TypeManager:
             typeb.type_name
         ):
             return False
+        print("passes this", typea.type_name, typeb.type_name)
         # if a is a supertype of b, then the types are compatible
         if self.is_a_subtype(
             typea.type_name, typeb.type_name
