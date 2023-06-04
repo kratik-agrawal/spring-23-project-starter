@@ -3,7 +3,7 @@ from intbase import InterpreterBase, ErrorType
 from bparser import BParser
 from objectv2 import ObjectDef
 from type_valuev2 import TypeManager
-
+import copy
 # need to document that each class has at least one method guaranteed
 
 # Main interpreter class
@@ -40,6 +40,9 @@ class Interpreter(InterpreterBase):
     # if the user tries to new an class name that does not exist. This will report the line number of the statement
     # with the new command
     def instantiate(self, class_name, line_num_of_statement):
+        class_name_orig = class_name
+        if '@' in class_name:
+            class_name = class_name[0:class_name.find('@')]
         if class_name not in self.class_index:
             super().error(
                 ErrorType.TYPE_ERROR,
@@ -47,11 +50,21 @@ class Interpreter(InterpreterBase):
                 line_num_of_statement,
             )
         class_def = self.class_index[class_name]
-        obj = ObjectDef(
-            self, class_def, None, self.trace_output
-        )  # Create an object based on this class definition
-        return obj
+        if class_def.template != True:
+            obj = ObjectDef(
+                self, class_def, None, self.trace_output
+            )  # Create an object based on this class definition
+            return obj
+        class_name_orig = class_name_orig.split('@')
+        class_def_templated = copy.deepcopy(class_def)
+        # give @ vars here
+        class_def_templated.template_instantiation(class_name_orig[1:])
 
+        obj = ObjectDef(
+                self, class_def_templated, None, self.trace_output
+            )  # Create an object based on this class definition
+        return obj
+        
     # returns a ClassDef object
     def get_class_def(self, class_name, line_number_of_statement):
         if class_name not in self.class_index:
@@ -64,6 +77,10 @@ class Interpreter(InterpreterBase):
 
     # returns a bool
     def is_valid_type(self, typename):
+        # if '@' in typename:
+        #     typename_split = typename.split('@')
+        #     class_def = self.get_class_def(typename_split[0])
+        #     return self.type_manager.is_valid_type(typename_split[0], class_def.num_parameterized_types)
         return self.type_manager.is_valid_type(typename)
 
     # returns a bool
@@ -79,7 +96,7 @@ class Interpreter(InterpreterBase):
     def __map_class_names_to_class_defs(self, program):
         self.class_index = {}
         for item in program:
-            if item[0] == InterpreterBase.CLASS_DEF:
+            if item[0] == InterpreterBase.CLASS_DEF or item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
                 if item[1] in self.class_index:
                     super().error(
                         ErrorType.TYPE_ERROR,
@@ -87,52 +104,59 @@ class Interpreter(InterpreterBase):
                         item[0].line_num,
                     )
                 self.class_index[item[1]] = ClassDef(item, self)
-            if item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
-                if item[1] in self.class_index:
-                    super().error(
-                        ErrorType.TYPE_ERROR,
-                        f"Duplicate class name {item[1]}",
-                        item[0].line_num,
-                    )
-                self.class_index[item[1]] = ClassDef(item, self)
+                if item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
+                    self.type_manager.add_templated_nums(item[1], self.class_index[item[1]].num_parameterized_types)
 
     # [class classname inherits superclassname [items]]
     def __add_all_class_types_to_type_manager(self, parsed_program):
         self.type_manager = TypeManager()
         for item in parsed_program:
-            if item[0] == InterpreterBase.CLASS_DEF:
+            if item[0] == InterpreterBase.CLASS_DEF or item[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
                 class_name = item[1]
                 superclass_name = None
                 if item[2] == InterpreterBase.INHERITS_DEF:
                     superclass_name = item[3]
                 self.type_manager.add_class_type(class_name, superclass_name)
+                
 
 
 if __name__ == "__main__":
     tester = Interpreter()
 
     program = ["""
-        (class main
-            (method int foo () 
-                (throw "blah")
-            )
-            (method int bar ((int x)) 
-                (return x)
-            )
+    (tclass MyTemplatedClass (shape_type animal_type)
+  (field shape_type some_shape)
+  (field animal_type some_animal)
+  	  (method void act ((shape_type s) (animal_type a))
+          (begin
+            (print "Shape's area: " (call s get_area))
+            (print "Animal's name: " (call a get_name))
+          )
+        ) 
+        ...
+      )
 
-            (method void main ()
-                (begin
-                    (try
-                        (throw "abc")
-                        (try
-                            (print exception)
-                            (print exception)
-                        )
-                    )
-                    
-                )
-            )
-        )
+(class Square
+  (field int side 10)
+  (method int get_area () (return (* side side)))
+)
+
+(class Dog
+  (field string name "koda")
+  (method string get_name () (return name))
+)
+
+(class main
+  (method void main ()
+    (let ((Square s) (Dog d) (MyTemplatedClass@Square@Dog t))
+      (set s (new Square))
+      (set d (new Dog))
+      (set t (new MyTemplatedClass@Square@Dog))
+      (call t act s d)
+    )
+  )
+)
+
 
     """]
     tester.run(program)

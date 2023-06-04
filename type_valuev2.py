@@ -80,6 +80,7 @@ def create_default_value(type_def):
 class TypeManager:
     def __init__(self):
         self.map_typename_to_type = {}
+        self.template_classname_num_types = {}
         self.__setup_primitive_types()
 
     # used to register a new class name (and its supertype name, if present as a valid type so it can be used
@@ -89,8 +90,16 @@ class TypeManager:
     def add_class_type(self, class_name, superclass_name):
         class_type = Type(class_name, superclass_name)
         self.map_typename_to_type[class_name] = class_type
+    
+    def add_templated_nums(self, class_name, num_param):
+        # class_type = Type(class_name, None)
+        self.template_classname_num_types[class_name] = num_param
 
     def is_valid_type(self, typename):
+        if '@' in typename:
+            typename_split = typename.split('@')
+            return typename_split[0] in self.map_typename_to_type \
+                and len(typename_split[1:]) == self.template_classname_num_types[typename_split[0]]
         return typename in self.map_typename_to_type
 
     # return Type object for specified typename string
@@ -122,6 +131,7 @@ class TypeManager:
     def check_type_compatibility(self, typea, typeb, for_assignment):
         # if either type is invalid (E.g., the user referenced a class name that doesn't exist) then
         # return false
+        # print(typea.type_name, typeb.type_name)
         if not self.is_valid_type(typea.type_name) or not self.is_valid_type(
             typeb.type_name
         ):
@@ -131,6 +141,7 @@ class TypeManager:
             typea.type_name, typeb.type_name
         ):  # animal = person or animal == person
             return True
+        
         # if b is a supertype of a, and we're not doing assignment then the types are compatible
         if not for_assignment and self.is_a_subtype(
             typeb.type_name, typea.type_name

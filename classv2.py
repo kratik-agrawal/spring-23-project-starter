@@ -95,12 +95,76 @@ class ClassDef:
         self.name = class_source[1]
         self.class_source = class_source
         self.template = False
-        fields_and_methods_start_index = (
+        self.fields_and_methods_start_index = (
             self.__check_for_inheritance_and_set_superclass_info(class_source)
         )
-        self.__create_field_list(class_source[fields_and_methods_start_index:])
-        self.__create_method_list(class_source[fields_and_methods_start_index:])
+        self.__create_field_list(class_source[self.fields_and_methods_start_index:])
+        self.__create_method_list(class_source[self.fields_and_methods_start_index:])
+    
+    def template_instantiation(self, templated_vars):
+        # print(templated_vars)
+        if self.num_parameterized_types != len(templated_vars):
+            self.interpreter.error(
+                ErrorType.TYPE_ERROR,
+                "templated class with not all types " + self.name,
+                
+            )
+        for i, typ in enumerate(self.parameterized_types_arr):
+            self.parameterized_types[typ] = templated_vars[i]
 
+        # handle and create all fields
+        self.__template_instantiation_fields(self.class_source[self.fields_and_methods_start_index:])
+
+        # handle and create all methods
+        self.__template_instantiation_methods(self.class_source[self.fields_and_methods_start_index:])
+        
+        # handle and check all types
+    
+    def __template_instantiation_fields(self, class_body):
+        self.fields = []  # array of VariableDefs with default values set
+        self.field_map = {}
+        fields_defined_so_far = set()
+        for member in class_body:
+            # member format is [field typename varname default_value]
+            if member[0] == InterpreterBase.FIELD_DEF:
+                if member[2] in fields_defined_so_far:  # redefinition
+                    self.interpreter.error(
+                        ErrorType.NAME_ERROR,
+                        "duplicate field " + member[2],
+                        member[0].line_num,
+                    )
+                if member[1] in self.parameterized_types:
+                    member[1] = self.parameterized_types[member[1]]
+                var_def = self.__create_variable_def_from_field(member)
+                self.fields.append(var_def)
+                self.field_map[member[2]] = var_def
+                fields_defined_so_far.add(member[2])
+
+    def __template_instantiation_methods(self, class_body):
+        self.methods = []
+        self.method_map = {}
+        methods_defined_so_far = set()
+        for member in class_body:
+            if member[0] == InterpreterBase.METHOD_DEF:
+                if member[1] in self.parameterized_types:
+                    member[1] = self.parameterized_types[member[1]]
+                for param in member[3]:
+                    if param[0] in self.parameterized_types:
+                        param[0] = self.parameterized_types[param[0]]
+                method_def = MethodDef(member)
+                if method_def.method_name in methods_defined_so_far:  # redefinition
+                    self.interpreter.error(
+                        ErrorType.NAME_ERROR,
+                        "duplicate method " + method_def.method_name,
+                        member[0].line_num,
+                    )
+                self.__check_method_names_and_types(method_def)
+                self.methods.append(method_def)
+                self.method_map[method_def.method_name] = method_def
+                methods_defined_so_far.add(method_def.method_name)
+                
+    def __check_all_types_templates(self):
+        return 1
     # get the classname
     def get_name(self):
         return self.name
@@ -118,7 +182,11 @@ class ClassDef:
         return self.super_class
 
     def __check_for_inheritance_and_set_superclass_info(self, class_source):
-        if class_source[0] != InterpreterBase.TEMPLATE_CLASS_DEF and class_source[2] != InterpreterBase.INHERITS_DEF:
+        if class_source[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
+            self.super_class = None
+            self.__handle_template_class(class_source)
+            return 3
+        if class_source[2] != InterpreterBase.INHERITS_DEF:
             self.super_class = None
             return 2  # fields and method definitions start after [class classname ...], jump to the correct place to continue parsing
         if class_source[2] == InterpreterBase.INHERITS_DEF:
@@ -127,10 +195,52 @@ class ClassDef:
                 super_class_name, class_source[0].line_num
             )
             return 4  # fields and method definitions start after [class classname inherits baseclassname ...]
-        if class_source[0] == InterpreterBase.TEMPLATE_CLASS_DEF:
-            self.num_parameterized_types = len(class_source[2])
-            
+
+    def __handle_template_class(self, class_source):
+        self.template = True
+        self.num_parameterized_types = len(class_source[2])
+        self.parameterized_types = {}
+        self.parameterized_types_arr = []
+        for t in class_source[2]:
+            self.parameterized_types[t] = ""
+            self.parameterized_types_arr.append(t)
+        self.__handle_fields_template(class_source[3])
+        self.__handle_methods_template(class_source[3])
+    
+    # just check for duplicates
+    def __handle_fields_template(self, class_body):
+        fields_defined_so_far = set()
+        for member in class_body:
+            # member format is [field typename varname default_value]
+            if member[0] == InterpreterBase.FIELD_DEF:
+                if member[2] in fields_defined_so_far:  # redefinition
+                    self.interpreter.error(
+                        ErrorType.NAME_ERROR,
+                        "duplicate field " + member[2],
+                        member[0].line_num,
+                    )
+                # var_def = self.__create_variable_def_from_field(member)
+                # self.fields.append(var_def)
+                fields_defined_so_far.add(member[2])
+    
+    # just check for duplicates
+    def __handle_methods_template(self, class_body):
+        methods_defined_so_far = set()
+        for member in class_body:
+            if member[0] == InterpreterBase.METHOD_DEF:
+                # method_def = MethodDef(member)
+                method_name = member[2]
+                if method_name in methods_defined_so_far:  # redefinition
+                    self.interpreter.error(
+                        ErrorType.NAME_ERROR,
+                        "duplicate method " + method_name,
+                        member[0].line_num,
+                    )
+                methods_defined_so_far.add(method_name)
+
     def __create_field_list(self, class_body):
+        if self.template == True:
+            return
         self.fields = []  # array of VariableDefs with default values set
         self.field_map = {}
         fields_defined_so_far = set()
@@ -143,9 +253,10 @@ class ClassDef:
                         "duplicate field " + member[2],
                         member[0].line_num,
                     )
-                var_def = self.__create_variable_def_from_field(member)
-                self.fields.append(var_def)
-                self.field_map[member[2]] = var_def
+                if self.template != True:
+                    var_def = self.__create_variable_def_from_field(member)
+                    self.fields.append(var_def)
+                    self.field_map[member[2]] = var_def
                 fields_defined_so_far.add(member[2])
 
     # field def: [field typename varname defvalue]
@@ -171,6 +282,8 @@ class ClassDef:
         return var_def
 
     def __create_method_list(self, class_body):
+        if self.template == True:
+            return
         self.methods = []
         self.method_map = {}
         methods_defined_so_far = set()
