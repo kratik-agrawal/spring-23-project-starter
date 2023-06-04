@@ -148,6 +148,9 @@ class TypeManager:
         # if either type is invalid (E.g., the user referenced a class name that doesn't exist) then
         # return false
         # print(typea.type_name, typeb.type_name)
+        if typea.full_name is not None or typeb.full_name is not None:
+            if typea.full_name != typeb.full_name:
+                return False
         if not self.is_valid_type(typea.type_name) or not self.is_valid_type(
             typeb.type_name
         ):

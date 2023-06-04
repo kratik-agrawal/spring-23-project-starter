@@ -138,21 +138,17 @@ if __name__ == "__main__":
 
     program = ["""
 (tclass foo (field_type)
-  (method foo@field_type get_me () (return me))
-  (method void talk () (print "hi"))
+  (method void print ((field_type v)) (print v))
 )
 
 (class main
   (method void main () 
-    (let ((foo@int x null))
-       (if (== x null) (print "null"))
-       (if (== null x) (print "null"))
+    (let ((foo@int x null) (foo@bool y null))
+      (set y (new foo@bool))
+      (set x y)
     )
   )
 )
-
-
-
 
 
 
