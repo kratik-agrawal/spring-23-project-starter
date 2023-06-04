@@ -147,9 +147,12 @@ if __name__ == "__main__":
 )
 
 (class main
+    (method void bob () 
+        (return (new node@bool))
+    )
   (method void main () 
     (let ((node@int x null))
-      (set x (new node@int))
+      (set x (call me bob))
       (call x set_val 5)
       (print (call x get_val))
     )
