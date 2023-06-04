@@ -204,14 +204,16 @@ class ClassDef:
         for t in class_source[2]:
             self.parameterized_types[t] = ""
             self.parameterized_types_arr.append(t)
-        self.__handle_fields_template(class_source[3])
-        self.__handle_methods_template(class_source[3])
+        self.__handle_fields_template(class_source[3:])
+        self.__handle_methods_template(class_source[3:])
     
     # just check for duplicates
     def __handle_fields_template(self, class_body):
         fields_defined_so_far = set()
+        # print(class_body)
         for member in class_body:
             # member format is [field typename varname default_value]
+            # print(member)
             if member[0] == InterpreterBase.FIELD_DEF:
                 if member[2] in fields_defined_so_far:  # redefinition
                     self.interpreter.error(

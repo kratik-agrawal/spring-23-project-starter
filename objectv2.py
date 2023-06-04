@@ -187,7 +187,15 @@ class ObjectDef:
     def __add_locals_to_env(self, env, var_defs, line_number):
         for var_def in var_defs:
             # vardef in the form of (typename varname defvalue)
-            var_type = Type(var_def[0])
+            if '@' in var_def[0]:
+                if not self.interpreter.is_valid_type(var_def[0]):
+                    self.interpreter.error(
+                        ErrorType.TYPE_ERROR,
+                        "invalid use of templated class"
+                    )
+                var_type = Type(var_def[0][0:var_def[0].find('@')])
+            else:
+                var_type = Type(var_def[0])
             var_name = var_def[1]
             # print(var_def)
             if len(var_def) == 3:
