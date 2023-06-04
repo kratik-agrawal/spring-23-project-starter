@@ -193,7 +193,7 @@ class ObjectDef:
                         ErrorType.TYPE_ERROR,
                         "invalid use of templated class"
                     )
-                var_type = Type(var_def[0][0:var_def[0].find('@')])
+                var_type = Type(var_def[0][0:var_def[0].find('@')], full_name=var_def[0])
             else:
                 var_type = Type(var_def[0])
             var_name = var_def[1]
@@ -515,6 +515,8 @@ class ObjectDef:
     def __execute_new_aux(self, env, code, line_num_of_statement):
         class_name = code[1]
         obj = self.interpreter.instantiate(code[1], line_num_of_statement)
+        if '@' in class_name:
+            return Value(Type(class_name[0:class_name.find('@')], full_name=class_name), obj)
         return Value(Type(class_name), obj)
 
     # this method is a helper used by call statements and call expressions

@@ -3,9 +3,10 @@ from intbase import InterpreterBase
 
 # Enumerated type for our different language data types
 class Type:
-    def __init__(self, type_name, supertype_name=None):
+    def __init__(self, type_name, supertype_name=None, full_name=None):
         self.type_name = type_name
         self.supertype_name = supertype_name
+        self.full_name = full_name
 
     def __eq__(self, other):
         return (
@@ -105,7 +106,7 @@ class TypeManager:
                 and len(typename_split[1:]) == self.template_classname_num_types[typename_split[0]]
             secondflag = True
             for vartype in typename_split[1:]:
-                print(vartype)
+                # print(vartype)
                 if not self.is_valid_type(vartype):
                     if vartype not in self.template_classname_param_types[typename_split[0]]:
                         secondflag = False
@@ -118,6 +119,9 @@ class TypeManager:
     def get_type_info(self, typename):
         if not self.is_valid_type(typename):
             return None
+        if '@' in typename:
+            temp = typename.split('@')
+            return self.map_typename_to_type[temp[0]]
         return self.map_typename_to_type[typename]
 
     # args are strings
@@ -148,7 +152,7 @@ class TypeManager:
             typeb.type_name
         ):
             return False
-        print("passes this", typea.type_name, typeb.type_name)
+        # print("passes this", typea.type_name, typeb.type_name)
         # if a is a supertype of b, then the types are compatible
         if self.is_a_subtype(
             typea.type_name, typeb.type_name

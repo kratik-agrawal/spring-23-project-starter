@@ -281,7 +281,7 @@ class ClassDef:
                         "invalid use of templated class"
                     )
                 var_def = VariableDef(
-                    Type(field_def[1]), field_def[2], create_default_value(Type(field_def[1][0:field_def[1].find('@')]))
+                    Type(field_def[1][0:field_def[1].find('@')], full_name=field_def[1]), field_def[2], create_default_value(Type(field_def[1][0:field_def[1].find('@')]))
                 )
             else:
                 var_def = VariableDef(
@@ -296,13 +296,13 @@ class ClassDef:
                         "invalid use of templated class"
                     )
                 var_def = VariableDef(
-                    Type(field_def[1]), field_def[2], create_value(field_def[3])
+                    Type(field_def[1][0:field_def[1].find('@')], full_name=field_def[1]), field_def[2], create_value(field_def[3])
                 )
             else: 
                 var_def = VariableDef(
                     Type(field_def[1]), field_def[2], create_value(field_def[3])
                 )
-        print(var_def.type.type_name, var_def.value.type().type_name)
+        # print(var_def.type.type_name, var_def.value.type().type_name)
         if not self.interpreter.check_type_compatibility(
             var_def.type, var_def.value.type(), True
         ):
