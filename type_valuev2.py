@@ -147,7 +147,7 @@ class TypeManager:
     def check_type_compatibility(self, typea, typeb, for_assignment):
         # if either type is invalid (E.g., the user referenced a class name that doesn't exist) then
         # return false
-        print(typea.type_name, typeb.type_name, typea.full_name, typeb.full_name)
+        # print(typea.type_name, typeb.type_name, typea.full_name, typeb.full_name)
         if typea.full_name is not None or typeb.full_name is not None:
             if typea.type_name != InterpreterBase.NULL_DEF and typeb.type_name != InterpreterBase.NULL_DEF :
                 if typea.full_name != typeb.full_name:
@@ -156,7 +156,7 @@ class TypeManager:
             typeb.type_name
         ):
             return False
-        print("passes this", typea.type_name, typeb.type_name)
+        # print("passes this", typea.type_name, typeb.type_name)
         # if a is a supertype of b, then the types are compatible
         if self.is_a_subtype(
             typea.type_name, typeb.type_name

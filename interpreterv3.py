@@ -137,39 +137,19 @@ if __name__ == "__main__":
     tester = Interpreter()
 
     program = ["""
-(tclass my_generic_class (field_type)
-  (method void do_your_thing ((field_type x)) (call x talk))
-)
-
-(class duck
- (method void talk () (print "quack"))
-)
-
-(class person
- (method void talk () (print "hello"))
+(tclass foo (field_type)
+  (method foo@field_type get_me () (return me))
+  (method void talk () (print "hi"))
 )
 
 (class main
-   (field my_generic_class@duck nam null)
-   (method my_generic_class@duck returntest ()
-        (return (new my_generic_class@duck))
-   
-   
-   )
-  (method void main ()
-    (let ((my_generic_class@duck x null)
-          (my_generic_class@person y null))
-      
-      (set x (new my_generic_class@duck))
-      (set nam (call me returntest))
-      (set y (new my_generic_class@person))
-      (call x do_your_thing (new duck))
-      (call y do_your_thing (new person))
+  (method void main () 
+    (let ((foo@int x null))
+       (if (== x null) (print "null"))
+       (if (== null x) (print "null"))
     )
   )
 )
-
-
 
 
     """]

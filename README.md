@@ -1,5 +1,6 @@
 # CS 131 Project done by Kratik Agrawal
-thank you for the extension, much appreciated!
+
+not sure where i am going wrong or what i am missing. related to templates though.
 
 
 1. [Project 1 Spec](https://docs.google.com/document/d/1pPQ2qZKbbsbZGBSwvuy1Ir-NZLPMgVt95WPQuI5aPho)

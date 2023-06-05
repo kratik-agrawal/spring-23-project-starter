@@ -84,7 +84,10 @@ class MethodDef:
     def __parse_params(self, params):
         formal_params = []
         for param in params:
-            var_def = VariableDef(Type(param[0]), param[1])
+            if '@' in param[0]:
+                var_def = VariableDef(Type(param[0][:param[0].find('@')], full_name=param[0]), param[1])
+            else:
+                var_def = VariableDef(Type(param[0][:param[0].find('@')], full_name=param[0]), param[1])
             formal_params.append(var_def)
         return formal_params
 
