@@ -156,7 +156,7 @@ class TypeManager:
             typeb.type_name
         ):
             return False
-        # print("passes this", typea.type_name, typeb.type_name)
+        print("passes this", typea.type_name, typeb.type_name)
         # if a is a supertype of b, then the types are compatible
         if self.is_a_subtype(
             typea.type_name, typeb.type_name

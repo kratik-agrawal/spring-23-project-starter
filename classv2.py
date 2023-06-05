@@ -60,7 +60,7 @@ class MethodDef:
         else:
             if '@' in method_source[1]:
                 val =  method_source[1]
-                self.return_type = Type(val[:val.find('@')], method_source[1])
+                self.return_type = Type(val[:val.find('@')],full_name= method_source[1])
             else:
                 self.return_type = Type(method_source[1])
         self.formal_params = self.__parse_params(method_source[3])
@@ -278,7 +278,7 @@ class ClassDef:
         if len(field_def) == 3:
             # print(field_def)
             if '@' in field_def[1]:
-                print(field_def[1])
+                # print(field_def[1])
                 if not self.interpreter.is_valid_type(field_def[1]):
                     self.interpreter.error(
                         ErrorType.TYPE_ERROR,
@@ -293,7 +293,7 @@ class ClassDef:
                 )   
         else:
             if '@' in field_def[1]:
-                print(field_def[1])
+                # print(field_def[1])
                 if not self.interpreter.is_valid_type(field_def[1]):
                     self.interpreter.error(
                         ErrorType.TYPE_ERROR,

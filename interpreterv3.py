@@ -137,34 +137,38 @@ if __name__ == "__main__":
     tester = Interpreter()
 
     program = ["""
-(tclass Foo (field_type)
-  (method void chatter ((field_type x)) 
-    (call x quack)      
-  )
-  (method bool compare_to_5 ((field_type x)) 
-    (return (== x 5))
+(tclass my_generic_class (field_type)
+  (method void do_your_thing ((field_type x)) (call x talk))
+)
+
+(class duck
+ (method void talk () (print "quack"))
+)
+
+(class person
+ (method void talk () (print "hello"))
+)
+
+(class main
+   (field my_generic_class@duck nam null)
+   (method my_generic_class@duck returntest ()
+        (return (new my_generic_class@duck))
+   
+   
+   )
+  (method void main ()
+    (let ((my_generic_class@duck x null)
+          (my_generic_class@person y null))
+      
+      (set x (new my_generic_class@duck))
+      (set nam (call me returntest))
+      (set y (new my_generic_class@person))
+      (call x do_your_thing (new duck))
+      (call y do_your_thing (new person))
+    )
   )
 )
 
-
-(class Duck
- (method void quack () (print "quack"))
-)
-
-      (class main
-        (field Foo@Duck t1)
-        (field Foo@int t2)
-        (method void main () 
-          (begin
-             (set t1 (new Foo@Duck))	
-             (set t2 (new Foo@int))		
-
-             (call t1 chatter (new Duck))	
-             (call t2 compare_to_5 5)  	
-             (call t1 chatter 10) 
-          )
-        )
-      )
 
 
 
