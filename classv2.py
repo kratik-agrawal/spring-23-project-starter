@@ -84,6 +84,7 @@ class MethodDef:
     def __parse_params(self, params):
         formal_params = []
         for param in params:
+            print(param)
             if '@' in param[0]:
                 var_def = VariableDef(Type(param[0][:param[0].find('@')], full_name=param[0]), param[1])
             else:
@@ -116,6 +117,7 @@ class ClassDef:
                 "templated class with not all types " + self.name,
                 
             )
+        print("bo", templated_vars)
         for i, typ in enumerate(self.parameterized_types_arr):
             self.parameterized_types[typ] = templated_vars[i]
 
@@ -160,11 +162,13 @@ class ClassDef:
         methods_defined_so_far = set()
         for member in class_body:
             if member[0] == InterpreterBase.METHOD_DEF:
+                print("bob", self.parameterized_types)
                 if member[1] in self.parameterized_types:
                     member[1] = self.parameterized_types[member[1]]
                 for param in member[3]:
                     if param[0] in self.parameterized_types:
                         param[0] = self.parameterized_types[param[0]]
+                print(member)
                 method_def = MethodDef(member)
                 if method_def.method_name in methods_defined_so_far:  # redefinition
                     self.interpreter.error(
@@ -343,6 +347,7 @@ class ClassDef:
     # for a given method, make sure that the parameter types are valid, return type is valid, and param names
     # are not duplicated
     def __check_method_names_and_types(self, method_def):
+        # print(method_def.return_type.type_name)
         if not self.interpreter.is_valid_type(
             method_def.return_type.type_name
         ) and method_def.return_type != Type(InterpreterBase.NOTHING_DEF): #checks that return type isn't a defined type or void

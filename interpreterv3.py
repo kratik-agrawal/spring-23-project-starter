@@ -137,19 +137,58 @@ if __name__ == "__main__":
     tester = Interpreter()
 
     program = ["""
-(tclass foo (field_type)
-  (method foo@field_type get_me () (return me))
-  (method void talk () (print "hi"))
-)
 
-(class main
-  (method void main () 
-    (let ((foo@int x null))
-       (if (== x null) (print "null"))
-       (if (== null x) (print "null"))
+(tclass Foo (field_type field2)
+  (method field2 chatter ((field_type x)) 
+    (return true)
+  )
+  (method string sneaky2 () 
+    (throw "snek3")
+  )
+  (method int sneaky () 
+    (return (call me sneaky2))
+  )
+  (method Foo@field_type@field2 getObj () 
+    (return (new Foo@field_type@field2))
+  )
+  (method bool coolio ((Foo@field_type@field2 x)) 
+    (begin
+      (try
+          (let ((int z 1) (Foo@field_type@field2 field_type))
+            (begin 
+              (set field_type (new Foo@field_type@field2))
+              (try
+                (return (== field_type (call me sneaky2)))
+                (return false)
+                )
+                (return true)
+              )
+            )
+          (print exception)
+      )
+      (return true)
     )
   )
 )
+
+(class Duck
+ (method void quack () (throw "quack"))
+  (method void quacker () (throw "quacker"))
+  (method void quacker2 () (print "quo"))
+
+)
+
+      (class main
+       
+        (field Foo@Duck@string t2 null)
+
+        (method void main () 
+          (let ((Foo@string@int t1) (Foo@Duck@int t2))
+             (set t1 (new Foo@string@int))
+             (print (call t1 coolio (call t1 getObj)))
+          )
+        )
+      )
 
 
     """]
